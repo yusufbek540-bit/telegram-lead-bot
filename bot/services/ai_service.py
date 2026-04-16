@@ -74,3 +74,8 @@ class AIService:
 
 # Singleton instance
 ai_service = AIService()
+
+
+def get_client():
+    """Return the AsyncOpenAI client for direct use by tagger/sentiment services."""
+    return ai_service.client

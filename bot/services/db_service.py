@@ -13,6 +13,11 @@ class DatabaseService:
     def __init__(self):
         self.client: Client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
 
+    @property
+    def supabase(self) -> Client:
+        """Alias for self.client — used by routing, tagger, sentiment services."""
+        return self.client
+
     # ── LEADS ──────────────────────────────────────────────────
 
     async def upsert_lead(
