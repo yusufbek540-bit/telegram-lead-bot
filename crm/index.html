@@ -1807,6 +1807,24 @@
             </div>
 
             <div className="panel-section">
+              <h3>Source Journey (Attribution)</h3>
+              <div style={{ fontSize: 13, padding: '6px 0' }}>
+                <span style={{ color: '#64748b', marginRight: 6 }}>Original First-Touch:</span>
+                <strong>{lead.original_source || lead.source || 'organic'}</strong>
+              </div>
+              {lead.touchpoints && lead.touchpoints.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <span style={{ color: '#64748b', fontSize: 12, marginBottom: 4, display: 'block', fontWeight: 500 }}>Subsequent Interactions:</span>
+                  {lead.touchpoints.map((tp, i) => (
+                    <div key={i} style={{ fontSize: 13, padding: '4px 0', marginLeft: 6, borderLeft: '2px solid #e2e8f0', paddingLeft: 10, marginTop: 4 }}>
+                       <strong style={{ color: '#0f172a' }}>{tp.source}</strong> <span style={{ color: '#94a3b8', fontSize: 12 }}>· {timeAgo(tp.timestamp)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="panel-section">
               <h3>Status History</h3>
               {history.length === 0 && <div className="empty">No history</div>}
               {history.map(h => (
@@ -2446,24 +2464,46 @@
     function Sources({ showToast, refreshKey }) {
       const [rows, setRows] = useState([]);
       const [loading, setLoading] = useState(true);
+      const [attrMode, setAttrMode] = useState('first');
 
       const load = useCallback(async () => {
         setLoading(true);
         try {
           const { data, error } = await supabase.from('leads')
-            .select('source, status, deal_value, deal_currency');
+            .select('source, original_source, touchpoints, status, deal_value, deal_currency');
           if (error) throw error;
 
           // Aggregate by source
           const map = {};
           (data || []).forEach(l => {
-            const src = l.source || 'direct';
-            if (!map[src]) map[src] = { source: src, count: 0, converted: 0, revenue: 0 };
-            map[src].count++;
-            if (l.status === 'converted') {
-              map[src].converted++;
-              map[src].revenue += l.deal_value || 0;
-            }
+             let sourcesAssigned = [];
+             if (attrMode === 'first') {
+                sourcesAssigned.push(l.original_source || l.source || 'organic');
+             } else if (attrMode === 'last') {
+                if (l.touchpoints && l.touchpoints.length > 0) {
+                    sourcesAssigned.push(l.touchpoints[l.touchpoints.length - 1].source);
+                } else {
+                    sourcesAssigned.push(l.source || l.original_source || 'organic');
+                }
+             } else if (attrMode === 'multi') {
+                const multiSources = new Set();
+                multiSources.add(l.original_source || l.source || 'organic');
+                if (l.touchpoints) {
+                    l.touchpoints.forEach(tp => multiSources.add(tp.source));
+                }
+                sourcesAssigned = Array.from(multiSources);
+             }
+
+             const weight = 1.0 / sourcesAssigned.length;
+
+             sourcesAssigned.forEach(src => {
+                if (!map[src]) map[src] = { source: src, count: 0, converted: 0, revenue: 0 };
+                map[src].count += weight;
+                if (l.status === 'won') {
+                  map[src].converted += weight;
+                  map[src].revenue += (l.deal_value || 0) * weight;
+                }
+             });
           });
 
           const result = Object.values(map).sort((a, b) => b.count - a.count);
@@ -2473,7 +2513,7 @@
         } finally {
           setLoading(false);
         }
-      }, [showToast]);
+      }, [showToast, attrMode]);
 
       useEffect(() => { load(); }, [load, refreshKey]);
 
@@ -2485,7 +2525,17 @@
 
       return (
         <div className="content-area" style={{ padding: 24 }}>
-          <h2 style={{ marginBottom: 16, fontSize: 18, fontWeight: 700 }}>Sources ROI</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Sources ROI</h2>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+               <span style={{ fontSize: 13, color: '#64748b' }}>Attribution Model:</span>
+               <select value={attrMode} onChange={e => setAttrMode(e.target.value)} style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', background: '#fff' }}>
+                 <option value="first">First-Touch (Original)</option>
+                 <option value="last">Last-Touch (Recent)</option>
+                 <option value="multi">Multi-Touch (Linear)</option>
+               </select>
+            </div>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
             {[
@@ -2543,6 +2593,133 @@
       );
     }
 
+    // Analytics Dashboard
+    function AnalyticsDashboard({ showToast }) {
+      const [loading, setLoading] = useState(true);
+      const [members, setMembers] = useState([]);
+      const [leads, setLeads] = useState([]);
+      const [heatmapData, setHeatmapData] = useState({ starts: [], phones: [], conversions: [] });
+      const [heatmapType, setHeatmapType] = useState('starts');
+
+      const load = useCallback(async () => {
+        setLoading(true);
+        try {
+          const [mRes, lRes, eRes, hRes] = await Promise.all([
+            supabase.from('team_members').select('*'),
+            supabase.from('leads').select('*'),
+            supabase.from('events').select('created_at').eq('event_type', 'bot_start'),
+            supabase.from('status_history').select('created_at').eq('new_status', 'won')
+          ]);
+          setMembers(mRes.data || []);
+          setLeads(lRes.data || []);
+          
+          const starts = eRes.data || [];
+          const phones = (lRes.data || []).filter(l => l.phone).map(l => ({ created_at: l.updated_at || l.created_at }));
+          const conversions = hRes.data || [];
+
+          setHeatmapData({ starts, phones, conversions });
+        } catch(e) {
+          showToast('Analytics error: ' + e.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }, [showToast]);
+
+      useEffect(() => { load(); }, [load]);
+
+      if (loading) return <div className="center-load"><div className="spinner" /></div>;
+
+      const activeEvents = heatmapData[heatmapType] || [];
+      const grid = Array.from({length: 7}, () => Array(24).fill(0));
+      let maxVal = 0;
+      activeEvents.forEach(ev => {
+         const d = new Date(ev.created_at);
+         const day = d.getDay();
+         const hour = d.getHours();
+         grid[day][hour]++;
+         if (grid[day][hour] > maxVal) maxVal = grid[day][hour];
+      });
+
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      const lb = members.map(m => {
+         const assigned = leads.filter(l => l.assigned_to === m.name);
+         const won = assigned.filter(l => l.status === 'won');
+         const revenue = won.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+         return { ...m, assigned: assigned.length, won: won.length, revenue };
+      }).sort((a, b) => b.revenue - a.revenue);
+
+      return (
+        <div style={{ maxWidth: 800 }}>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Activity Heatmap</h3>
+              <select value={heatmapType} onChange={e => setHeatmapType(e.target.value)} style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none' }}>
+                <option value="starts">First Contact (Starts)</option>
+                <option value="phones">Phone Shared</option>
+                <option value="conversions">Conversions (Won)</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginRight: 8, marginTop: 24 }}>
+                 {days.map(d => <div key={d} style={{ height: 24, fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center' }}>{d}</div>)}
+               </div>
+               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                 <div style={{ display: 'flex', gap: 2, height: 20 }}>
+                   {Array.from({length: 24}).map((_, h) => <div key={h} style={{ flex: 1, fontSize: 10, color: '#64748b', textAlign: 'center' }}>{h.toString().padStart(2, '0')}</div>)}
+                 </div>
+                 {grid.map((row, dayIdx) => (
+                   <div key={dayIdx} style={{ display: 'flex', gap: 2 }}>
+                     {row.map((val, h) => {
+                       const intensity = maxVal === 0 ? 0 : val / maxVal;
+                       const bg = maxVal === 0 ? '#f1f5f9' : `rgba(16, 185, 129, ${Math.max(0.05, intensity)})`;
+                       return <div key={h} style={{ flex: 1, height: 24, backgroundColor: bg, borderRadius: 2 }} title={`${days[dayIdx]} ${h}:00 — ${val} events`} />
+                     })}
+                   </div>
+                 ))}
+               </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 style={{ marginBottom: 12 }}>Team Leaderboard</h3>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 14 }}>
+                <thead style={{ background: '#f8fafc' }}>
+                  <tr>
+                    <th style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>Agent</th>
+                    <th style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>Assigned</th>
+                    <th style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>Won</th>
+                    <th style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>Conversion %</th>
+                    <th style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>Generated Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lb.map(m => {
+                    const convRate = m.assigned > 0 ? Math.round((m.won / m.assigned) * 100) : 0;
+                    return (
+                      <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px 16px', fontWeight: 500 }}>{m.name}</td>
+                        <td style={{ padding: '10px 16px' }}>{m.assigned}</td>
+                        <td style={{ padding: '10px 16px' }}>{m.won}</td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ background: convRate > 10 ? '#dcfce7' : '#f1f5f9', color: convRate > 10 ? '#166534' : '#64748b', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>
+                            {convRate}%
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px', fontWeight: 600, color: '#0f172a' }}>{fmtRevenue(m.revenue, 'UZS')}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {lb.length === 0 && <div style={{ padding: 16, color: '#64748b' }}>No agents mapped yet.</div>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const [authed, setAuthed] = useState(sessionStorage.getItem('crm_auth') === '1');
       const [tab, setTab] = useState('dashboard');
@@ -2580,6 +2757,7 @@
               <a className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>📊 Dashboard</a>
               <a className={tab === 'leads' ? 'active' : ''} onClick={() => setTab('leads')}>👥 Leads</a>
               <a className={tab === 'pipeline' ? 'active' : ''} onClick={() => setTab('pipeline')}>🎯 Pipeline</a>
+              <a className={tab === 'analytics' ? 'active' : ''} onClick={() => setTab('analytics')}>📈 Analytics</a>
               <a className={tab === 'sources' ? 'active' : ''} onClick={() => setTab('sources')}>📡 Sources ROI</a>
               <a className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}>⚙️ Settings</a>
             </div>
@@ -2605,6 +2783,7 @@
               {tab === 'dashboard' && <Dashboard showToast={showToast} refreshKey={refreshKey} />}
               {tab === 'leads' && <LeadsTable showToast={showToast} refreshKey={refreshKey} search={debouncedSearch} onOpenLead={setSelectedLead} />}
               {tab === 'pipeline' && <Kanban showToast={showToast} refreshKey={refreshKey} onOpenLead={setSelectedLead} />}
+              {tab === 'analytics' && <AnalyticsDashboard showToast={showToast} />}
               {tab === 'sources' && <Sources showToast={showToast} refreshKey={refreshKey} />}
               {tab === 'settings' && <Settings showToast={showToast} />}
             </div>

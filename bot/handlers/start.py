@@ -29,9 +29,6 @@ async def cmd_start(message: Message, command: CommandObject):
     is_new = existing_lead is None
     has_lang = existing_lead and existing_lead.get("preferred_lang")
 
-    # Auto-capture lead (no form, no friction)
-    # Only set source when: new user (always), or returning user with a real deep link.
-    # Never overwrite an existing source with "organic" (e.g. user clicks /start manually later).
     source_to_save = source if (is_new or source != "organic") else None
     await db.upsert_lead(
         telegram_id=user.id,
@@ -41,6 +38,22 @@ async def cmd_start(message: Message, command: CommandObject):
         language_code=user.language_code,
         source=source_to_save,
     )
+
+    # Telemetry: Touchpoints and Original Source
+    import datetime
+    now_iso = datetime.datetime.now().isoformat()
+    if is_new:
+        db.supabase.table("leads").update({
+            "original_source": source,
+            "touchpoints": [{"source": source, "timestamp": now_iso}]
+        }).eq("telegram_id", user.id).execute()
+    elif source != "organic":
+        # Returning user with a distinct deep link — append touchpoint
+        tps = existing_lead.get("touchpoints") or []
+        # Prevent rapid duplicate logging
+        if not tps or tps[-1].get("source") != source or (datetime.datetime.now() - datetime.datetime.fromisoformat(tps[-1].get("timestamp", now_iso))).total_seconds() > 3600:
+            tps.append({"source": source, "timestamp": now_iso})
+            db.supabase.table("leads").update({"touchpoints": tps}).eq("telegram_id", user.id).execute()
 
     # Track event
     await db.track_event(user.id, "bot_start", {"source": source})
