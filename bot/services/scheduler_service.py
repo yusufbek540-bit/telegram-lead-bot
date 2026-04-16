@@ -203,7 +203,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     scheduler.add_job(
         check_scheduled_campaigns,
         trigger="interval",
-        minutes=5,
+        minutes=1,
         args=[bot],
         id="check_scheduled_campaigns",
         replace_existing=True,

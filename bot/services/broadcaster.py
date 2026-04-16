@@ -167,18 +167,37 @@ async def send_campaign(campaign_id: int, bot: Bot) -> None:
 
 async def check_scheduled_campaigns(bot: Bot) -> None:
     """Scheduled job: fire any campaigns whose scheduled_for has passed."""
-    now = datetime.now(timezone.utc).isoformat()
-    res = db.client.table("campaigns").select("id").eq("status", "scheduled").lte(
-        "scheduled_for", now
-    ).execute()
+    logger.info("check_scheduled_campaigns: scanning for due campaigns")
+    try:
+        # Get all scheduled campaigns - compare server-side via Supabase
+        now = datetime.now(timezone.utc).isoformat()
+        res = db.client.table("campaigns").select("id, scheduled_for").eq("status", "scheduled").execute()
 
-    for row in (res.data or []):
-        logger.info(f"Triggering scheduled campaign {row['id']}")
-        try:
-            await send_campaign(row["id"], bot)
-        except Exception as e:
-            logger.error(f"Campaign {row['id']} failed: {e}")
-            db.client.table("campaigns").update({"status": "failed"}).eq("id", row["id"]).execute()
+        due = []
+        for row in (res.data or []):
+            sf = row.get("scheduled_for")
+            if not sf:
+                due.append(row)
+                continue
+            # Parse scheduled_for and compare
+            try:
+                scheduled_dt = datetime.fromisoformat(sf.replace("Z", "+00:00"))
+                if scheduled_dt <= datetime.now(timezone.utc):
+                    due.append(row)
+            except Exception:
+                due.append(row)  # If parsing fails, fire it anyway
+
+        logger.info(f"check_scheduled_campaigns: found {len(due)} due campaign(s) out of {len(res.data or [])} scheduled")
+
+        for row in due:
+            logger.info(f"Triggering scheduled campaign {row['id']}")
+            try:
+                await send_campaign(row["id"], bot)
+            except Exception as e:
+                logger.error(f"Campaign {row['id']} failed: {e}")
+                db.client.table("campaigns").update({"status": "failed"}).eq("id", row["id"]).execute()
+    except Exception as e:
+        logger.error(f"check_scheduled_campaigns error: {e}", exc_info=True)
 
 
 async def count_recipients(target_filters: dict) -> int:
