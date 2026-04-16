@@ -28,6 +28,8 @@ from bot.services.db_service import db
 from bot.services.followups import check_followup_reminders
 from bot.services.stale_detector import detect_stale_leads
 from bot.services.proposal_expiry import check_proposal_expiry
+from bot.services.tagger import run_auto_tagger
+from bot.services.sentiment import run_sentiment_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +178,24 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
         hours=config.JOB_INTERVALS["proposal_expiry_hours"],
         args=[bot],
         id="check_proposal_expiry",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        run_auto_tagger,
+        trigger="interval",
+        hours=config.JOB_INTERVALS.get("tagging_interval_hours", 1),
+        args=[bot],
+        id="run_auto_tagger",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        run_sentiment_analysis,
+        trigger="interval",
+        hours=config.JOB_INTERVALS.get("sentiment_interval_hours", 2),
+        args=[bot],
+        id="run_sentiment_analysis",
         replace_existing=True,
     )
 

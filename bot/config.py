@@ -40,7 +40,8 @@ class Config:
         "followup_check_hours": 1,
         "followup_reminders_hours": 1,    # team CRM reminder notifications
         "stale_detection_hour": 9,        # daily at 9 AM Tashkent time
-        "ai_batch_hours": 8,              # sentiment + tagging (budget-conscious)
+        "tagging_interval_hours": 1,      # AI behavior tagging
+        "sentiment_interval_hours": 2,    # conversational context parsing
         "proposal_expiry_hours": 6,
         "campaign_dispatch_minutes": 5,
         "heartbeat_minutes": 30,

@@ -52,7 +52,9 @@ async def cmd_start(message: Message, command: CommandObject):
             reply_markup=language_keyboard(),
         )
         if is_new:
-            await notify_admins_new_lead(message, user, source)
+            from bot.services.routing import route_new_lead
+            assigned = await route_new_lead(user.id, source_to_save or "organic")
+            await notify_admins_new_lead(message, user, source, assigned)
     else:
         # Returning user who already chose — go straight to menu
         lang = existing_lead["preferred_lang"]
@@ -127,7 +129,7 @@ async def cmd_portfolio(message: Message):
         )
 
 
-async def notify_admins_new_lead(message: Message, user, source: str):
+async def notify_admins_new_lead(message: Message, user, source: str, assigned: str = None):
     """Notify all admins about a new lead."""
     from html import escape
     import logging
@@ -139,6 +141,9 @@ async def notify_admins_new_lead(message: Message, user, source: str):
         text = t("admin_new_lead_organic", "ru", name=name, username=username, lang=lang)
     else:
         text = t("admin_new_lead", "ru", name=name, username=username, phone="—", source=escape(source))
+
+    if assigned:
+        text += f"\n👤 <b>Назначен:</b> {escape(assigned)}"
 
     for admin_id in config.ADMIN_IDS:
         try:

@@ -1218,7 +1218,7 @@
       const load = useCallback(async () => {
         setLoading(true);
         try {
-          const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+          const { data, error } = await supabase.from('leads').select('*, lead_tags(tag, confidence, source)').order('created_at', { ascending: false });
           if (error) throw error;
           setLeads(data || []);
         } catch (e) {
@@ -1376,20 +1376,24 @@
       const [history, setHistory] = useState([]);
       const [newComment, setNewComment] = useState('');
 
+      const [tags, setTags] = useState([]);
+
       const loadDetails = useCallback(async () => {
         try {
-          const [c, e, cm, h, pr] = await Promise.all([
+          const [c, e, cm, h, pr, lt] = await Promise.all([
             supabase.from('conversations').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: true }),
             supabase.from('events').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false }),
             supabase.from('comments').select('*').eq('telegram_id', lead.telegram_id).order('is_pinned', { ascending: false }).order('created_at', { ascending: true }),
             supabase.from('status_history').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false }),
             supabase.from('proposals').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false }),
+            supabase.from('lead_tags').select('*').eq('telegram_id', lead.telegram_id).order('confidence', { ascending: false }),
           ]);
           setConvo(c.data || []);
           setEvents(e.data || []);
           setComments(cm.data || []);
           setHistory(h.data || []);
           setProposals(pr.data || []);
+          setTags(lt.data || []);
         } catch (err) {
           showToast('Failed to load lead details', 'error');
         }
@@ -1543,6 +1547,37 @@
                   onClick={() => setShowScoreBreakdown(s => !s)}
                 >{lead.lead_score ?? 0} ℹ️</span>
               </div>
+              {lead.sentiment && (
+                <div className="field-row">
+                  <span className="label">Sentiment</span>
+                  <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>
+                    {lead.sentiment === 'positive' && '🟢 '}
+                    {lead.sentiment === 'neutral' && '🟡 '}
+                    {lead.sentiment === 'negative' && '🔴 '}
+                    {lead.sentiment}
+                  </span>
+                </div>
+              )}
+              {lead.key_signals && lead.key_signals.length > 0 && (
+                <div className="field-row" style={{ alignItems: 'flex-start' }}>
+                  <span className="label">Key Signals</span>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {lead.key_signals.map((sig, i) => (
+                      <span key={i} style={{ fontSize: 11, background: '#f5f5f5', padding: '2px 6px', borderRadius: 4 }}>{sig}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {tags.length > 0 && (
+                <div className="field-row" style={{ alignItems: 'flex-start' }}>
+                   <span className="label">Tags</span>
+                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {tags.map((t, i) => (
+                        <span key={i} style={{ background: '#e0f7fa', color: '#006064', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>#{t.tag}</span>
+                      ))}
+                   </div>
+                </div>
+              )}
               {showScoreBreakdown && (() => {
                 const bd = computeScoreBreakdown(lead, events, convo);
                 return (
@@ -1795,7 +1830,7 @@
       const load = useCallback(async () => {
         setLoading(true);
         try {
-          const { data, error } = await supabase.from('leads').select('*').order('updated_at', { ascending: false });
+          const { data, error } = await supabase.from('leads').select('*, lead_tags(tag, confidence, source)').order('updated_at', { ascending: false });
           if (error) throw error;
           setLeads(data || []);
         } catch (e) {
@@ -1875,10 +1910,20 @@
                       <div className="name">{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || '—'}</div>
                       {l.phone && <div style={{ fontSize: 12, color: '#64748b' }}>{l.phone}</div>}
                       <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{l.source || '—'}</div>
-                      <div className="meta">
+                      <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ color: scoreColor(l.lead_score), fontWeight: 700 }}>⚡ {l.lead_score ?? 0}</span>
-                        <span>{timeAgo(l.updated_at)}</span>
+                        {l.sentiment && <span title={`Sentiment: ${l.sentiment}`} style={{ fontSize: 12 }}>{l.sentiment === 'positive' ? '🟢' : l.sentiment === 'negative' ? '🔴' : '🟡'}</span>}
+                        <span style={{ marginLeft: 'auto' }}>{timeAgo(l.updated_at)}</span>
                       </div>
+                      {l.lead_tags && l.lead_tags.length > 0 && (
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
+                          {l.lead_tags.slice(0, 3).map((t, i) => (
+                            <span key={i} style={{ background: '#e0f7fa', color: '#006064', padding: '2px 4px', borderRadius: 4, fontSize: 10, fontWeight: 500 }}>
+                              #{t.tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1940,6 +1985,74 @@
               style={{ flex: 1, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }}
             />
             <button className="btn btn-primary" onClick={add}>Add</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Routing Rules Manager
+    function RoutingRulesManager({ showToast }) {
+      const [rules, setRules] = useState([]);
+      const [ruleName, setRuleName] = useState('');
+      const [ruleSourceCond, setRuleSourceCond] = useState('');
+      const [ruleStrategy, setRuleStrategy] = useState('round_robin');
+      
+      const loadRules = useCallback(async () => {
+        const { data } = await supabase.from('routing_rules').select('*').order('priority', { ascending: false });
+        setRules(data || []);
+      }, []);
+
+      useEffect(() => { loadRules(); }, [loadRules]);
+
+      const addRule = async () => {
+        if (!ruleName.trim()) { showToast('Name required', 'error'); return; }
+        const conditions = ruleSourceCond ? { source: ruleSourceCond.trim() } : {};
+        const { error } = await supabase.from('routing_rules').insert({
+          name: ruleName.trim(),
+          conditions,
+          assignee_strategy: ruleStrategy,
+          priority: rules.length > 0 ? rules[0].priority + 1 : 1
+        });
+        if (error) { showToast(error.message, 'error'); return; }
+        showToast('Rule added', 'success');
+        setRuleName(''); setRuleSourceCond(''); setRuleStrategy('round_robin');
+        loadRules();
+      };
+
+      const removeRule = async (id) => {
+        await supabase.from('routing_rules').delete().eq('id', id);
+        loadRules();
+      };
+
+      return (
+        <div>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>New leads will be assigned based on these rules (highest priority down).</p>
+          {rules.length > 0 ? (
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 12 }}>
+              {rules.map(r => (
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <span style={{ fontWeight: 500, flex: 1 }}>{r.name}</span>
+                  <span style={{ fontSize: 13, background: '#f5f5f5', padding: '2px 6px', borderRadius: 4 }}>
+                    {Object.keys(r.conditions||{}).length ? JSON.stringify(r.conditions) : 'All Sources'}
+                  </span>
+                  <span style={{ fontSize: 13, background: '#e0e7ff', color: '#3730a3', padding: '2px 6px', borderRadius: 4 }}>
+                    {r.assignee_strategy}
+                  </span>
+                  <button className="btn" style={{ padding: '2px 8px' }} onClick={() => removeRule(r.id)}>✕</button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>No routing rules configured. Leads will fall back to baseline round-robin.</div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input placeholder="Name (e.g. Meta Ads)" value={ruleName} onChange={e => setRuleName(e.target.value)} style={{ flex: 1, minWidth: 150, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }} />
+            <input placeholder="Source direct match (optional)" value={ruleSourceCond} onChange={e => setRuleSourceCond(e.target.value)} style={{ flex: 1, minWidth: 150, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }} />
+            <select value={ruleStrategy} onChange={e => setRuleStrategy(e.target.value)} style={{ padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff' }}>
+              <option value="round_robin">Round Robin</option>
+              <option value="specialist">Specialist (Match Tags)</option>
+            </select>
+            <button className="btn btn-primary" onClick={addRule}>Add</button>
           </div>
         </div>
       );
@@ -2062,6 +2175,11 @@
               />
               <button className="btn btn-primary" onClick={addMember}>Add</button>
             </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Smart Routing Rules</h3>
+            <RoutingRulesManager showToast={showToast} />
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
