@@ -4,7 +4,7 @@ Manages leads, conversations, and events.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 from bot.config import config
 
@@ -105,7 +105,7 @@ class DatabaseService:
         These opened the bot but never typed anything.
         """
         from datetime import timedelta
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        cutoff = (datetime.now(config.tz) - timedelta(hours=2)).isoformat()
         leads = (
             self.client.table("leads")
             .select("telegram_id, preferred_lang, first_name")
@@ -134,7 +134,7 @@ class DatabaseService:
         and who have NOT shared their phone (already in contact = skip).
         """
         from datetime import timedelta
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        cutoff = (datetime.now(config.tz) - timedelta(hours=24)).isoformat()
         leads = (
             self.client.table("leads")
             .select("telegram_id, preferred_lang, first_name")
@@ -163,7 +163,7 @@ class DatabaseService:
         Leads where phone IS NULL, 5+ messages, and last message > 48h ago.
         """
         from datetime import timedelta
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+        cutoff = (datetime.now(config.tz) - timedelta(hours=48)).isoformat()
         leads = (
             self.client.table("leads")
             .select("telegram_id, preferred_lang, first_name")
@@ -230,7 +230,7 @@ class DatabaseService:
         # Update last_activity_at on every user message for stale detection
         if role == "user":
             self.client.table("leads").update(
-                {"last_activity_at": datetime.now(timezone.utc).isoformat()}
+                {"last_activity_at": datetime.now(config.tz).isoformat()}
             ).eq("telegram_id", telegram_id).execute()
 
     async def get_conversation(self, telegram_id: int, limit: int = 20) -> list:

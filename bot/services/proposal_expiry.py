@@ -22,7 +22,7 @@ async def check_proposal_expiry(bot: Bot):
     start = time.monotonic()
     logger.info("check_proposal_expiry: starting")
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(config.tz)
         three_days = (now + timedelta(days=3)).date().isoformat()
         today = now.date().isoformat()
 
@@ -79,7 +79,7 @@ async def check_proposal_expiry(bot: Bot):
 
         # 2. Mark overdue proposals as expired
         expired = db.client.table("proposals") \
-            .update({"status": "expired", "updated_at": now.isoformat()}) \
+            .update({"status": "expired", "updated_at": datetime.now(config.tz).isoformat()}) \
             .eq("status", "sent") \
             .lt("valid_until", today) \
             .execute()

@@ -41,7 +41,7 @@ async def cmd_start(message: Message, command: CommandObject):
 
     # Telemetry: Touchpoints and Original Source
     import datetime
-    now_iso = datetime.datetime.now().isoformat()
+    now_iso = datetime.datetime.now(config.tz).isoformat()
     if is_new:
         db.supabase.table("leads").update({
             "original_source": source,
@@ -51,7 +51,7 @@ async def cmd_start(message: Message, command: CommandObject):
         # Returning user with a distinct deep link — append touchpoint
         tps = existing_lead.get("touchpoints") or []
         # Prevent rapid duplicate logging
-        if not tps or tps[-1].get("source") != source or (datetime.datetime.now() - datetime.datetime.fromisoformat(tps[-1].get("timestamp", now_iso))).total_seconds() > 3600:
+        if not tps or tps[-1].get("source") != source or (datetime.datetime.now(config.tz) - datetime.datetime.fromisoformat(tps[-1].get("timestamp", now_iso))).total_seconds() > 3600:
             tps.append({"source": source, "timestamp": now_iso})
             db.supabase.table("leads").update({"touchpoints": tps}).eq("telegram_id", user.id).execute()
 

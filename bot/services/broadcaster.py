@@ -52,7 +52,7 @@ async def get_campaign_recipients(target_filters: dict) -> list[dict]:
 
     # Client-side filter: inactive_days
     if inactive_days := target_filters.get("inactive_days"):
-        cutoff = datetime.now(timezone.utc) - timedelta(days=int(inactive_days))
+        cutoff = datetime.now(config.tz) - timedelta(days=int(inactive_days))
         leads = [
             l for l in leads
             if l.get("updated_at") and datetime.fromisoformat(
@@ -88,7 +88,7 @@ async def send_campaign(campaign_id: int, bot: Bot) -> None:
     # Mark as sending
     db.client.table("campaigns").update({
         "status": "sending",
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "updated_at": datetime.now(config.tz).isoformat()
     }).eq("id", campaign_id).execute()
 
     target_filters = campaign.get("target_filters") or {}
@@ -116,7 +116,7 @@ async def send_campaign(campaign_id: int, bot: Bot) -> None:
 
         try:
             await bot.send_message(tg_id, message_text, parse_mode="HTML")
-            delivery["sent_at"] = datetime.now(timezone.utc).isoformat()
+            delivery["sent_at"] = datetime.now(config.tz).isoformat()
             delivery["delivered"] = True
             sent += 1
         except TelegramForbiddenError:
@@ -131,7 +131,7 @@ async def send_campaign(campaign_id: int, bot: Bot) -> None:
             await asyncio.sleep(e.retry_after)
             try:
                 await bot.send_message(tg_id, message_text, parse_mode="HTML")
-                delivery["sent_at"] = datetime.now(timezone.utc).isoformat()
+                delivery["sent_at"] = datetime.now(config.tz).isoformat()
                 delivery["delivered"] = True
                 sent += 1
             except Exception as retry_err:
@@ -159,7 +159,7 @@ async def send_campaign(campaign_id: int, bot: Bot) -> None:
         "status": final_status,
         "sent_count": sent,
         "failed_count": failed,
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "updated_at": datetime.now(config.tz).isoformat()
     }).eq("id", campaign_id).execute()
 
     logger.info(f"Campaign {campaign_id} complete: sent={sent}, failed={failed}")
@@ -170,7 +170,7 @@ async def check_scheduled_campaigns(bot: Bot) -> None:
     logger.info("check_scheduled_campaigns: scanning for due campaigns")
     try:
         # Get all scheduled campaigns - compare server-side via Supabase
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(config.tz).isoformat()
         res = db.client.table("campaigns").select("id, scheduled_for").eq("status", "scheduled").execute()
 
         due = []
@@ -182,7 +182,7 @@ async def check_scheduled_campaigns(bot: Bot) -> None:
             # Parse scheduled_for and compare
             try:
                 scheduled_dt = datetime.fromisoformat(sf.replace("Z", "+00:00"))
-                if scheduled_dt <= datetime.now(timezone.utc):
+                if scheduled_dt <= datetime.now(config.tz):
                     due.append(row)
             except Exception:
                 due.append(row)  # If parsing fails, fire it anyway

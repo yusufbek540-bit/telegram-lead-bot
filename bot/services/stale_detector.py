@@ -38,7 +38,7 @@ async def _get_recipient_ids(lead: dict) -> list:
 
 async def _already_flagged_today(telegram_id: int) -> bool:
     """True if a stale_flagged event was written for this lead in the past 24h."""
-    since = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    since = (datetime.now(config.tz) - timedelta(hours=24)).isoformat()
     result = (
         db.client.table("events")
         .select("id")
@@ -56,7 +56,7 @@ async def detect_stale_leads(bot: Bot) -> None:
     start = time.monotonic()
     logger.info("detect_stale_leads: starting")
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(config.tz)
         # Fetch all active leads that have a last_activity_at value
         result = (
             db.client.table("leads")

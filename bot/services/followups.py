@@ -41,7 +41,7 @@ async def check_followup_reminders(bot: Bot) -> None:
     start = time.monotonic()
     logger.info("check_followup_reminders: starting")
     try:
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(config.tz).isoformat()
 
         # Fetch overdue, incomplete reminders
         result = (

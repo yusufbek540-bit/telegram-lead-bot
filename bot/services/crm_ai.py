@@ -148,7 +148,7 @@ async def _execute_tool(tool_name: str, args: dict) -> str:
             if args.get("has_phone"):
                 query = query.not_.is_("phone", "null")
             if args.get("days_old"):
-                since = datetime.now(timezone.utc) - timedelta(days=int(args["days_old"]))
+                since = datetime.now(config.tz) - timedelta(days=int(args["days_old"]))
                 query = query.gte("created_at", since.isoformat())
             result = query.order("lead_score", desc=True).limit(20).execute()
             return json.dumps(result.data or [], ensure_ascii=False)
@@ -233,7 +233,7 @@ async def answer_crm_question(question: str) -> str:
     Runs an agentic loop of up to 5 tool-call rounds. Returns the AI's
     plain-language answer in Russian.
     """
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(config.tz).strftime("%Y-%m-%d")
     system = _SYSTEM_PROMPT.format(agency_name=config.AGENCY_NAME, today=today)
 
     messages: list = [

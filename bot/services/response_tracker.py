@@ -29,6 +29,6 @@ async def record_first_contact(telegram_id: int) -> None:
         return  # Already recorded
     await db.update_lead(
         telegram_id,
-        first_contact_at=datetime.now(timezone.utc).isoformat(),
+        first_contact_at=datetime.now(config.tz).isoformat(),
     )
     logger.info(f"record_first_contact: recorded for {telegram_id}")

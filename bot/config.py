@@ -1,10 +1,18 @@
 import os
+import zoneinfo
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 class Config:
+    # Timezone
+    TIMEZONE: str = os.getenv("TIMEZONE", "Asia/Tashkent")
+
+    @property
+    def tz(self) -> zoneinfo.ZoneInfo:
+        return zoneinfo.ZoneInfo(self.TIMEZONE)
+
     # Telegram
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
 
