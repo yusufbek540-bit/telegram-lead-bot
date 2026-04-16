@@ -11,7 +11,7 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS deal_currency TEXT DEFAULT 'UZS';
 -- Proposals table
 CREATE TABLE IF NOT EXISTS proposals (
     id            BIGSERIAL PRIMARY KEY,
-    telegram_id   BIGINT REFERENCES leads(telegram_id) ON DELETE CASCADE,
+    telegram_id   BIGINT NOT NULL REFERENCES leads(telegram_id) ON DELETE CASCADE,
     title         TEXT NOT NULL,
     amount        NUMERIC NOT NULL,
     currency      TEXT NOT NULL DEFAULT 'UZS',

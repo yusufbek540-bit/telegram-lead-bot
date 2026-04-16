@@ -1,0 +1,2513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https: blob:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:;">
+  <title>Lead CRM</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #1e293b;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar .logo {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 0 20px 20px;
+      border-bottom: 1px solid #334155;
+      color: #f1f5f9;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      margin-top: 16px;
+    }
+
+    .nav a {
+      padding: 12px 20px;
+      cursor: pointer;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 3px solid transparent;
+      transition: background 0.15s;
+    }
+
+    .nav a:hover {
+      background: #334155;
+    }
+
+    .nav a.active {
+      background: #334155;
+      border-left-color: #3b82f6;
+      color: #fff;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      height: 60px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .topbar input.search {
+      width: 320px;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .topbar input.search:focus {
+      border-color: #3b82f6;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge-new {
+      background: #ef4444;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: #fff;
+      border-color: #3b82f6;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+    }
+
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .stat-card .label {
+      color: #64748b;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: #0f172a;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .chart-card h3 {
+      font-size: 14px;
+      margin-bottom: 16px;
+      color: #334155;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    table th {
+      text-align: left;
+      padding: 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+      user-select: none;
+      background: #f8fafc;
+    }
+
+    table th:hover {
+      background: #f1f5f9;
+    }
+
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+
+    table tbody tr {
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .score-badge {
+      font-weight: 700;
+    }
+
+    .filters-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+      background: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+
+    .filters-bar select,
+    .filters-bar input {
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+    }
+
+    /* Panel */
+    .panel-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: flex-end;
+      z-index: 50;
+    }
+
+    .panel {
+      width: 560px;
+      max-width: 100%;
+      background: #fff;
+      height: 100%;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .panel-header h2 {
+      font-size: 18px;
+    }
+
+    .panel-section {
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .panel-section h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
+      font-size: 14px;
+    }
+
+    .field-row .label {
+      color: #64748b;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .chat-bubble {
+      max-width: 75%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin: 4px 0;
+      font-size: 13px;
+      word-wrap: break-word;
+    }
+
+    .chat-user {
+      background: #3b82f6;
+      color: #fff;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-assistant {
+      background: #f1f5f9;
+      color: #0f172a;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-container {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #fafafa;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 13px;
+    }
+
+    .activity-item .icon {
+      font-size: 18px;
+    }
+
+    .activity-item .time {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    .comment {
+      padding: 8px;
+      background: #f8fafc;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .comment .meta {
+      font-size: 11px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .comment.pinned {
+      background: #fef3c7;
+      border-left: 3px solid #f59e0b;
+    }
+
+    /* Kanban */
+    .kanban {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      height: 100%;
+    }
+
+    .kanban-col {
+      flex: 0 0 260px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      max-height: 100%;
+    }
+
+    .kanban-col.dragover {
+      background: #dbeafe;
+    }
+
+    .kanban-col-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #cbd5e1;
+    }
+
+    .kanban-col-header .title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .kanban-col-cards {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .kanban-card {
+      background: #fff;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 13px;
+      border: 1px solid #e2e8f0;
+      cursor: grab;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .kanban-card:active {
+      cursor: grabbing;
+    }
+
+    .kanban-card .name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .kanban-card .meta {
+      color: #64748b;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    /* Login */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .login-box {
+      background: #fff;
+      padding: 32px;
+      border-radius: 12px;
+      width: 360px;
+    }
+
+    .login-box h1 {
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .login-box .error {
+      color: #ef4444;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 200;
+      font-size: 14px;
+    }
+
+    .toast.error {
+      background: #ef4444;
+    }
+
+    .toast.success {
+      background: #22c55e;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .center-load {
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .empty {
+      text-align: center;
+      color: #94a3b8;
+      padding: 24px;
+      font-size: 13px;
+    }
+    /* ── AI Chat Panel ─────────────────────────────────── */
+    .ai-toggle-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .ai-toggle-btn:hover { opacity: 0.85; }
+    .ai-panel {
+      position: fixed;
+      top: 0; right: 0;
+      width: 380px;
+      height: 100vh;
+      background: #fff;
+      border-left: 1px solid #e2e8f0;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.10);
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+    }
+    .ai-panel.open { transform: translateX(0); }
+    .ai-panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 16px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    }
+    .ai-panel-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .ai-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ai-msg {
+      max-width: 88%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .ai-msg.user {
+      align-self: flex-end;
+      background: #6366f1;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .ai-msg.assistant {
+      align-self: flex-start;
+      background: #f1f5f9;
+      color: #1e293b;
+      border-bottom-left-radius: 4px;
+    }
+    .ai-msg.loading {
+      align-self: flex-start;
+      background: #f1f5f9;
+      color: #94a3b8;
+      font-style: italic;
+    }
+    .ai-input-row {
+      padding: 12px 14px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 8px;
+    }
+    .ai-input {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+    }
+    .ai-input:focus { border-color: #6366f1; }
+    .ai-send-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: opacity 0.15s;
+    }
+    .ai-send-btn:disabled { opacity: 0.5; cursor: default; }
+    .ai-examples {
+      padding: 8px 16px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ai-example-chip {
+      background: #ede9fe;
+      color: #6366f1;
+      border: none;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.1s;
+    }
+    .ai-example-chip:hover { background: #ddd6fe; }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo, useRef } = React;
+    const {
+      BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+      XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid
+    } = Recharts;
+
+    const CONFIG = {
+      SUPABASE_URL: 'https://yrgxbcgfthzkuenfewkx.supabase.co',
+      SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyZ3hiY2dmdGh6a3VlbmZld2t4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjE1NzE1OCwiZXhwIjoyMDkxNzMzMTU4fQ.84Dmo3DVi5epw5tWZfDSh25pyfboOHSRpd5lAiDqOk4',
+      CRM_PASSWORD: 'admin123', // change this to your preferred password
+      BOT_TOKEN: 'REDACTED_BOT_TOKEN',
+      ADMIN_IDS: [733400880, 58591930],
+    };
+
+    const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+    async function notifyTelegram(chatId, text) {
+      try {
+        await fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+        });
+      } catch (e) {
+        // silent fail — notification is best-effort
+      }
+    }
+
+    async function notifyAdmins(text) {
+      for (const id of CONFIG.ADMIN_IDS) {
+        await notifyTelegram(id, text);
+      }
+    }
+
+    async function getTeamMembers() {
+      const { data } = await supabase.from('team_members').select('*').order('name');
+      return data || [];
+    }
+
+    function getCrmUserName() {
+      return localStorage.getItem('crm_user_name') || '';
+    }
+
+    const STATUSES = ['new', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'converted', 'lost'];
+    const STATUS_COLORS = {
+      new: '#3b82f6',
+      contacted: '#8b5cf6',
+      qualified: '#f97316',
+      proposal_sent: '#6366f1',
+      negotiation: '#eab308',
+      converted: '#22c55e',
+      lost: '#ef4444',
+    };
+    const STATUS_LABELS = {
+      new: 'New', contacted: 'Contacted', qualified: 'Qualified',
+      proposal_sent: 'Proposal Sent', negotiation: 'Negotiation',
+      converted: 'Converted', lost: 'Lost',
+    };
+
+    const EVENT_ICONS = {
+      phone_shared: '📞', ai_chat: '🤖', button_click: '👆',
+      twa_open: '🌐', callback_request: '📬',
+    };
+
+    function fmtRevenue(val, currency) {
+      if (!val) return null;
+      if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M ${currency || 'UZS'}`;
+      if (val >= 1000) return `${(val / 1000).toFixed(0)}K ${currency || 'UZS'}`;
+      return `${val} ${currency || 'UZS'}`;
+    }
+
+    function timeAgo(dateStr) {
+      if (!dateStr) return '—';
+      const diff = Date.now() - new Date(dateStr);
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    function formatDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString();
+    }
+
+    function scoreColor(score) {
+      if (score == null) return '#94a3b8';
+      if (score > 50) return '#22c55e';
+      if (score >= 20) return '#eab308';
+      return '#ef4444';
+    }
+
+    // Stale thresholds mirror config.STALE_THRESHOLDS (days per status)
+    const STALE_THRESHOLDS_DAYS = { new: 1, contacted: 3, qualified: 7, proposal_sent: 5 };
+    function isStale(lead) {
+      if (!lead.last_activity_at) return false;
+      const threshold = STALE_THRESHOLDS_DAYS[lead.status];
+      if (!threshold) return false;
+      const daysSince = (Date.now() - new Date(lead.last_activity_at)) / 86400000;
+      return daysSince > threshold;
+    }
+
+    function responseTimeBadge(lead) {
+      if (lead.first_contact_at) {
+        const mins = Math.round((new Date(lead.first_contact_at) - new Date(lead.created_at)) / 60000);
+        if (mins < 15) return { text: `✅ ${mins}m`, color: '#22c55e', title: 'Contacted quickly' };
+        if (mins < 60) return { text: `🟡 ${mins}m`, color: '#eab308', title: 'Contacted in time' };
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return { text: `🔴 ${h}h${m}m`, color: '#ef4444', title: 'Slow response' };
+      }
+      if (lead.status !== 'new') return null;
+      const mins = Math.round((Date.now() - new Date(lead.created_at)) / 60000);
+      if (mins < 60) return { text: `⏳ ${mins}m`, color: '#eab308', title: 'Waiting for contact' };
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return { text: `🔴 ${h}h${m}m`, color: '#ef4444', title: 'Waiting too long' };
+    }
+
+    function computeScoreBreakdown(lead, events, convos) {
+      const items = [];
+      let total = 0;
+      const add = (label, pts) => { items.push({ label, pts }); total += pts; };
+      if (lead.phone) add('Телефон поделён', 30);
+      if (lead.email) add('Email поделён', 20);
+      const userMsgs = (convos || []).filter(m => m.role === 'user').length;
+      if (userMsgs >= 10) add(`${userMsgs} сообщений в чате`, 20);
+      else if (userMsgs >= 5) add(`${userMsgs} сообщений в чате`, 15);
+      else if (userMsgs >= 2) add(`${userMsgs} сообщений в чате`, 5);
+      const evTypes = new Set((events || []).map(e => e.event_type));
+      if (evTypes.has('twa_open')) add('Открыл портфолио', 10);
+      if (evTypes.has('callback_request')) add('Запросил звонок', 25);
+      if (evTypes.has('projects')) add('Просмотрел проекты', 10);
+      if (evTypes.has('services')) add('Просмотрел услуги', 5);
+      return { items, total };
+    }
+
+    // Toast
+    function useToast() {
+      const [toast, setToast] = useState(null);
+      const show = useCallback((msg, type = 'info') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 3000);
+      }, []);
+      const el = toast ? <div className={`toast ${toast.type}`}>{toast.msg}</div> : null;
+      return [el, show];
+    }
+
+    function Login({ onSuccess }) {
+      const [pw, setPw] = useState('');
+      const [err, setErr] = useState('');
+      const submit = () => {
+        const stored = sessionStorage.getItem('crm_password_override') || CONFIG.CRM_PASSWORD;
+        if (pw === stored) {
+          sessionStorage.setItem('crm_auth', '1');
+          onSuccess();
+        } else {
+          setErr('Wrong password');
+        }
+      };
+      return (
+        <div className="login-overlay">
+          <div className="login-box">
+            <h1>CRM Login</h1>
+            {err && <div className="error">{err}</div>}
+            <input
+              type="password" placeholder="Password" value={pw}
+              onChange={e => setPw(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submit()}
+              autoFocus
+            />
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={submit}>Login</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Dashboard
+    function Dashboard({ showToast, refreshKey }) {
+      const [loading, setLoading] = useState(true);
+      const [stats, setStats] = useState({ total: 0, week: 0, conversion: 0, withPhone: 0 });
+      const [pipeline, setPipeline] = useState([]);
+      const [sources, setSources] = useState([]);
+      const [daily, setDaily] = useState([]);
+      const [scoreDist, setScoreDist] = useState([]);
+      const [lostReasons, setLostReasons] = useState([]);
+      const [activity, setActivity] = useState([]);
+      const [priorities, setPriorities] = useState({ newUncontacted: [], overdueFollowups: [], hotNoPhone: [], todayFollowups: [] });
+
+      const load = useCallback(async () => {
+        setLoading(true);
+        try {
+          const { data: leads, error: le } = await supabase.from('leads').select('id, status, phone, created_at, lead_score, first_name, last_name, telegram_id, source, first_contact_at, last_activity_at, rejection_reason');
+          if (le) throw le;
+          const total = leads.length;
+          const weekAgo = Date.now() - 7 * 86400000;
+          const week = leads.filter(l => new Date(l.created_at).getTime() > weekAgo).length;
+          const converted = leads.filter(l => l.status === 'converted').length;
+          const withPhone = leads.filter(l => l.phone).length;
+          setStats({
+            total,
+            week,
+            conversion: total ? ((converted / total) * 100).toFixed(1) : 0,
+            withPhone: total ? ((withPhone / total) * 100).toFixed(1) : 0,
+          });
+
+          // Pipeline
+          const pipelineData = STATUSES.map(s => ({
+            status: STATUS_LABELS[s],
+            statusKey: s,
+            count: leads.filter(l => l.status === s).length,
+          }));
+          setPipeline(pipelineData);
+
+          // Sources — compute directly from leads (reliable fallback)
+          {
+            const srcMap = {};
+            leads.forEach(l => {
+              const s = l.source || 'direct';
+              srcMap[s] = (srcMap[s] || 0) + 1;
+            });
+            setSources(Object.entries(srcMap).map(([source, count]) => ({ source, lead_count: count })));
+          }
+
+          // Daily
+          const { data: dailyData } = await supabase.from('daily_leads').select('*').order('day', { ascending: true }).limit(30);
+          if (dailyData) setDaily(dailyData);
+          else {
+            const byDay = {};
+            const now = Date.now();
+            for (let i = 29; i >= 0; i--) {
+              const d = new Date(now - i * 86400000).toISOString().split('T')[0];
+              byDay[d] = 0;
+            }
+            leads.forEach(l => {
+              const d = new Date(l.created_at).toISOString().split('T')[0];
+              if (byDay[d] !== undefined) byDay[d]++;
+            });
+            setDaily(Object.entries(byDay).map(([day, count]) => ({ day, count })));
+          }
+
+          // Score Distribution
+          const bins = [
+            { range: '0-20', count: 0, fill: '#ef4444' },
+            { range: '21-50', count: 0, fill: '#eab308' },
+            { range: '51-100', count: 0, fill: '#22c55e' },
+          ];
+          leads.forEach(l => {
+            const s = l.lead_score || 0;
+            if (s <= 20) bins[0].count++;
+            else if (s <= 50) bins[1].count++;
+            else bins[2].count++;
+          });
+          setScoreDist(bins);
+
+          // Why we lose
+          const lostMap = {};
+          leads.filter(l => l.status === 'lost' && l.rejection_reason).forEach(l => {
+            lostMap[l.rejection_reason] = (lostMap[l.rejection_reason] || 0) + 1;
+          });
+          setLostReasons(Object.entries(lostMap).map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count));
+
+          // Activity
+          const { data: events } = await supabase.from('events').select('*').order('created_at', { ascending: false }).limit(10);
+          if (events) {
+            const telIds = [...new Set(events.map(e => e.telegram_id))];
+            const { data: evLeads } = await supabase.from('leads').select('telegram_id, first_name, last_name').in('telegram_id', telIds);
+            const nameMap = {};
+            (evLeads || []).forEach(l => { nameMap[l.telegram_id] = [l.first_name, l.last_name].filter(Boolean).join(' ') || 'Unknown'; });
+            setActivity(events.map(e => ({ ...e, name: nameMap[e.telegram_id] || 'Unknown' })));
+          }
+          // Priorities widget data
+          const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+          const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+          const nowIso = new Date().toISOString();
+          const { data: reminders } = await supabase
+            .from('followup_reminders')
+            .select('id, telegram_id, note, scheduled_for')
+            .eq('completed', false);
+          const overdue = (reminders || []).filter(r => new Date(r.scheduled_for) < new Date() );
+          const todayRem = (reminders || []).filter(r => {
+            const d = new Date(r.scheduled_for);
+            return d >= todayStart && d <= todayEnd;
+          });
+          // Enrich reminders with lead names
+          const remTids = [...new Set([...overdue, ...todayRem].map(r => r.telegram_id))];
+          let remLeadMap = {};
+          if (remTids.length > 0) {
+            const { data: remLeads } = await supabase.from('leads').select('telegram_id, first_name, last_name').in('telegram_id', remTids);
+            (remLeads || []).forEach(l => { remLeadMap[l.telegram_id] = `${l.first_name || ''} ${l.last_name || ''}`.trim() || '—'; });
+          }
+          const enrichReminder = r => ({ ...r, leadName: remLeadMap[r.telegram_id] || '—' });
+          setPriorities({
+            newUncontacted: leads.filter(l => l.status === 'new' && !l.first_contact_at),
+            overdueFollowups: overdue.map(enrichReminder),
+            hotNoPhone: leads.filter(l => (l.lead_score || 0) > 50 && !l.phone),
+            todayFollowups: todayRem.map(enrichReminder),
+          });
+        } catch (e) {
+          console.error(e);
+          showToast('Failed to load dashboard: ' + e.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }, [showToast]);
+
+      useEffect(() => { load(); }, [load, refreshKey]);
+
+      if (loading) return <div className="center-load"><div className="spinner" /></div>;
+
+      const PIE_COLORS = ['#3b82f6', '#8b5cf6', '#f97316', '#22c55e', '#eab308', '#6366f1', '#ef4444', '#06b6d4'];
+
+      return (
+        <div>
+          {(priorities.newUncontacted.length > 0 || priorities.overdueFollowups.length > 0 || priorities.hotNoPhone.length > 0 || priorities.todayFollowups.length > 0) && (
+            <div className="card" style={{ marginBottom: 16 }}>
+              <h3 style={{ marginBottom: 12 }}>🎯 Сегодня в приоритете</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                {priorities.newUncontacted.length > 0 && (
+                  <div style={{ minWidth: 160 }}>
+                    <div style={{ fontWeight: 600, color: '#ef4444', marginBottom: 6 }}>🔴 Новые без контакта ({priorities.newUncontacted.length})</div>
+                    {priorities.newUncontacted.slice(0, 5).map(l => (
+                      <div key={l.id} style={{ fontSize: 13, color: '#475569', padding: '2px 0' }}>
+                        {`${l.first_name || ''} ${l.last_name || ''}`.trim() || l.username || '—'}
+                      </div>
+                    ))}
+                    {priorities.newUncontacted.length > 5 && <div style={{ fontSize: 12, color: '#94a3b8' }}>+{priorities.newUncontacted.length - 5} ещё</div>}
+                  </div>
+                )}
+                {priorities.overdueFollowups.length > 0 && (
+                  <div style={{ minWidth: 160 }}>
+                    <div style={{ fontWeight: 600, color: '#eab308', marginBottom: 6 }}>🟡 Просроченные ({priorities.overdueFollowups.length})</div>
+                    {priorities.overdueFollowups.slice(0, 5).map(r => (
+                      <div key={r.id} style={{ fontSize: 13, color: '#475569', padding: '2px 0' }}>
+                        {r.leadName} — {r.note || '—'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {priorities.hotNoPhone.length > 0 && (
+                  <div style={{ minWidth: 160 }}>
+                    <div style={{ fontWeight: 600, color: '#22c55e', marginBottom: 6 }}>🟢 Горячие без телефона ({priorities.hotNoPhone.length})</div>
+                    {priorities.hotNoPhone.slice(0, 5).map(l => (
+                      <div key={l.id} style={{ fontSize: 13, color: '#475569', padding: '2px 0' }}>
+                        {`${l.first_name || ''} ${l.last_name || ''}`.trim() || l.username || '—'} ⚡{l.lead_score}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {priorities.todayFollowups.length > 0 && (
+                  <div style={{ minWidth: 160 }}>
+                    <div style={{ fontWeight: 600, color: '#3b82f6', marginBottom: 6 }}>🔵 Сегодня ({priorities.todayFollowups.length})</div>
+                    {priorities.todayFollowups.slice(0, 5).map(r => (
+                      <div key={r.id} style={{ fontSize: 13, color: '#475569', padding: '2px 0' }}>
+                        {r.leadName} — {r.note || '—'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="stats-row">
+            <div className="stat-card"><div className="label">Total Leads</div><div className="value">{stats.total}</div></div>
+            <div className="stat-card"><div className="label">New This Week</div><div className="value">{stats.week}</div></div>
+            <div className="stat-card"><div className="label">Conversion Rate</div><div className="value">{stats.conversion}%</div></div>
+            <div className="stat-card"><div className="label">Leads with Phone</div><div className="value">{stats.withPhone}%</div></div>
+          </div>
+
+          <div className="charts-grid">
+            <div className="chart-card">
+              <h3>Lead Funnel</h3>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={pipeline}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="status" tick={{ fontSize: 11 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count">
+                    {pipeline.map((entry, i) => <Cell key={i} fill={STATUS_COLORS[entry.statusKey]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="chart-card">
+              <h3>Leads by Source</h3>
+              {sources.length === 0 ? (
+                <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 14 }}>No data yet</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie data={sources} dataKey="lead_count" nameKey="source" cx="50%" cy="50%" innerRadius={50} outerRadius={85} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {sources.map((e, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(val) => [val, 'Leads']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            <div className="chart-card">
+              <h3>Daily Trend (Last 30 Days)</h3>
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={daily}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey={daily[0] && daily[0].lead_count !== undefined ? 'lead_count' : 'count'} stroke="#3b82f6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="chart-card">
+              <h3>Score Distribution</h3>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={scoreDist}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="range" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count">
+                    {scoreDist.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {lostReasons.length > 0 && (
+              <div className="card">
+                <h3 style={{ marginBottom: 16 }}>Why We Lose Leads</h3>
+                <Recharts.BarChart width={340} height={220} data={lostReasons} layout="vertical">
+                  <Recharts.CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <Recharts.XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+                  <Recharts.YAxis type="category" dataKey="reason" width={120} tick={{ fontSize: 12 }} />
+                  <Recharts.Tooltip />
+                  <Recharts.Bar dataKey="count" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                </Recharts.BarChart>
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <h3 style={{ marginBottom: 12 }}>Recent Activity</h3>
+            {activity.length === 0 && <div className="empty">No recent activity</div>}
+            {activity.map(a => (
+              <div key={a.id} className="activity-item">
+                <span className="icon">{EVENT_ICONS[a.event_type] || '•'}</span>
+                <span><strong>{a.name}</strong> — {a.event_type}</span>
+                <span className="time">{timeAgo(a.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Leads Table
+    function LeadsTable({ showToast, refreshKey, search, onOpenLead }) {
+      const [leads, setLeads] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [statusFilter, setStatusFilter] = useState('all');
+      const [sourceFilter, setSourceFilter] = useState('all');
+      const [assignedFilter, setAssignedFilter] = useState('all');
+      const [hasPhoneOnly, setHasPhoneOnly] = useState(false);
+      const [sortBy, setSortBy] = useState('created_at');
+      const [sortDir, setSortDir] = useState('desc');
+      const [page, setPage] = useState(1);
+      const PER_PAGE = 25;
+
+      const load = useCallback(async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+          if (error) throw error;
+          setLeads(data || []);
+        } catch (e) {
+          showToast('Failed to load leads: ' + e.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }, [showToast]);
+
+      useEffect(() => { load(); }, [load, refreshKey]);
+
+      const sources = useMemo(() => [...new Set(leads.map(l => l.source).filter(Boolean))], [leads]);
+      const assignees = useMemo(() => [...new Set(leads.map(l => l.assigned_to).filter(Boolean))], [leads]);
+
+      const filtered = useMemo(() => {
+        let out = leads;
+        if (statusFilter !== 'all') out = out.filter(l => l.status === statusFilter);
+        if (sourceFilter !== 'all') out = out.filter(l => l.source === sourceFilter);
+        if (assignedFilter !== 'all') out = out.filter(l => l.assigned_to === assignedFilter);
+        if (hasPhoneOnly) out = out.filter(l => l.phone);
+        if (search) {
+          const s = search.toLowerCase();
+          out = out.filter(l =>
+            (l.first_name || '').toLowerCase().includes(s) ||
+            (l.last_name || '').toLowerCase().includes(s) ||
+            (l.username || '').toLowerCase().includes(s) ||
+            (l.phone || '').toLowerCase().includes(s)
+          );
+        }
+        out = [...out].sort((a, b) => {
+          let va = a[sortBy], vb = b[sortBy];
+          if (va == null) va = '';
+          if (vb == null) vb = '';
+          if (va < vb) return sortDir === 'asc' ? -1 : 1;
+          if (va > vb) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        return out;
+      }, [leads, statusFilter, sourceFilter, assignedFilter, hasPhoneOnly, search, sortBy, sortDir]);
+
+      const totalPages = Math.ceil(filtered.length / PER_PAGE) || 1;
+      const pageLeads = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+      useEffect(() => { setPage(1); }, [statusFilter, sourceFilter, assignedFilter, hasPhoneOnly, search]);
+
+      const toggleSort = col => {
+        if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        else { setSortBy(col); setSortDir('asc'); }
+      };
+
+      if (loading) return <div className="center-load"><div className="spinner" /></div>;
+
+      return (
+        <div>
+          <div className="filters-bar">
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <option value="all">All Statuses</option>
+              {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+            <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
+              <option value="all">All Sources</option>
+              {sources.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={assignedFilter} onChange={e => setAssignedFilter(e.target.value)}>
+              <option value="all">All Assignees</option>
+              {assignees.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={hasPhoneOnly} onChange={e => setHasPhoneOnly(e.target.checked)} />
+              Has Phone
+            </label>
+            <div style={{ marginLeft: 'auto', color: '#64748b', fontSize: 13 }}>
+              {filtered.length} results
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: 0 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th onClick={() => toggleSort('first_name')}>Name</th>
+                  <th onClick={() => toggleSort('phone')}>Phone</th>
+                  <th onClick={() => toggleSort('source')}>Source</th>
+                  <th onClick={() => toggleSort('status')}>Status</th>
+                  <th onClick={() => toggleSort('lead_score')}>Score</th>
+                  <th onClick={() => toggleSort('assigned_to')}>Assigned</th>
+                  <th onClick={() => toggleSort('updated_at')}>Last Activity</th>
+                  <th onClick={() => toggleSort('created_at')}>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageLeads.map(l => (
+                  <tr key={l.id} onClick={() => onOpenLead(l)} style={isStale(l) ? { borderLeft: '3px solid #ef4444', background: '#fff5f5' } : {}}>
+                    <td>
+                      {[l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || '—'}
+                      {(() => { const b = responseTimeBadge(l); return b ? <span style={{ marginLeft: 6, fontSize: 11, color: b.color }} title={b.title}>{b.text}</span> : null; })()}
+                    </td>
+                    <td>{l.phone || '—'}</td>
+                    <td>{l.source || '—'}</td>
+                    <td><span className="status-badge" style={{ background: STATUS_COLORS[l.status] || '#94a3b8' }}>{STATUS_LABELS[l.status] || l.status}</span></td>
+                    <td><span className="score-badge" style={{ color: scoreColor(l.lead_score) }}>{l.lead_score ?? 0}</span></td>
+                    <td>{l.assigned_to || '—'}</td>
+                    <td>{timeAgo(l.updated_at)}</td>
+                    <td>{formatDate(l.created_at)}</td>
+                  </tr>
+                ))}
+                {pageLeads.length === 0 && <tr><td colSpan="8" className="empty">No leads found</td></tr>}
+              </tbody>
+            </table>
+            <div className="pagination">
+              <span style={{ color: '#64748b', fontSize: 13 }}>
+                Showing {filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
+                <span style={{ padding: '8px 0' }}>{page} / {totalPages}</span>
+                <button className="btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Lead Detail Panel
+    function LeadPanel({ lead, onClose, showToast, onUpdated }) {
+      const [status, setStatus] = useState(lead.status || 'new');
+      const [rejection, setRejection] = useState(lead.rejection_reason || '');
+      const [assigned, setAssigned] = useState(lead.assigned_to || '');
+      const [followup, setFollowup] = useState(lead.next_followup_at ? lead.next_followup_at.slice(0, 16) : '');
+      const [followupNote, setFollowupNote] = useState(lead.followup_note || '');
+      const [saving, setSaving] = useState(false);
+      const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
+      const [dealValue, setDealValue] = useState(lead.deal_value != null ? String(lead.deal_value) : '');
+      const [dealCurrency, setDealCurrency] = useState(lead.deal_currency || 'UZS');
+      const [proposals, setProposals] = useState([]);
+      const [showProposalForm, setShowProposalForm] = useState(false);
+      const [propTitle, setPropTitle] = useState('');
+      const [propAmount, setPropAmount] = useState('');
+      const [propCurrency, setPropCurrency] = useState('UZS');
+      const [propValidUntil, setPropValidUntil] = useState('');
+      const [savingProposal, setSavingProposal] = useState(false);
+      const [teamMembers, setTeamMembers] = useState([]);
+      const [rejectionReasons, setRejectionReasons] = useState([]);
+      React.useEffect(() => { getTeamMembers().then(setTeamMembers); }, []);
+      React.useEffect(() => {
+        supabase.from('rejection_reasons').select('label').order('sort_order').then(({ data }) => {
+          setRejectionReasons((data || []).map(r => r.label));
+        });
+      }, []);
+
+      const [convo, setConvo] = useState([]);
+      const [events, setEvents] = useState([]);
+      const [comments, setComments] = useState([]);
+      const [history, setHistory] = useState([]);
+      const [newComment, setNewComment] = useState('');
+
+      const loadDetails = useCallback(async () => {
+        try {
+          const [c, e, cm, h, pr] = await Promise.all([
+            supabase.from('conversations').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: true }),
+            supabase.from('events').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false }),
+            supabase.from('comments').select('*').eq('telegram_id', lead.telegram_id).order('is_pinned', { ascending: false }).order('created_at', { ascending: true }),
+            supabase.from('status_history').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false }),
+            supabase.from('proposals').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false }),
+          ]);
+          setConvo(c.data || []);
+          setEvents(e.data || []);
+          setComments(cm.data || []);
+          setHistory(h.data || []);
+          setProposals(pr.data || []);
+        } catch (err) {
+          showToast('Failed to load lead details', 'error');
+        }
+      }, [lead.telegram_id, showToast]);
+
+      useEffect(() => { loadDetails(); }, [loadDetails]);
+
+      const save = async () => {
+        setSaving(true);
+        try {
+          const updates = {
+            status,
+            assigned_to: assigned || null,
+            next_followup_at: followup || null,
+            followup_note: followupNote || null,
+            rejection_reason: status === 'lost' ? (rejection || null) : null,
+            deal_value: dealValue !== '' ? parseFloat(dealValue) : null,
+            deal_currency: dealCurrency,
+            updated_at: new Date().toISOString(),
+          };
+          // Record first contact time when status moves away from 'new' for the first time
+          if (lead.status === 'new' && status !== 'new' && !lead.first_contact_at) {
+            updates.first_contact_at = new Date().toISOString();
+          }
+          const { error } = await supabase.from('leads').update(updates).eq('id', lead.id);
+          if (error) throw error;
+          const leadName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || lead.username || 'Unknown';
+          if (status !== lead.status) {
+            await supabase.from('status_history').insert({
+              telegram_id: lead.telegram_id,
+              old_status: lead.status, new_status: status,
+              changed_by: getCrmUserName() || 'CRM',
+            });
+            const rejectionReason = status === 'lost' ? (rejection || '') : '';
+            const changer = getCrmUserName() || 'CRM';
+            const statusMsg = `🔄 Статус изменён\n\nЛид: <b>${leadName}</b>\nНовый статус: <b>${STATUS_LABELS[status] || status}</b>${rejectionReason ? `\nПричина: ${rejectionReason}` : ''}\nИзменил: ${changer}`;
+            await notifyAdmins(statusMsg);
+          }
+          const newAssignedTo = assigned || '';
+          const origAssignedTo = lead.assigned_to || '';
+          if (newAssignedTo && newAssignedTo !== origAssignedTo) {
+            const teamMembers = await getTeamMembers();
+            const member = teamMembers.find(m => m.name === newAssignedTo);
+            if (member && member.telegram_id) {
+              const phone = lead.phone || '—';
+              const score = lead.lead_score || 0;
+              const source = lead.source || '—';
+              const assignMsg = `📋 Вам назначен лид!\n\nИмя: <b>${leadName}</b>\nТелефон: ${phone}\nИсточник: ${source}\nБаллы: ${score}\n\nНазначил: CRM`;
+              await notifyTelegram(member.telegram_id, assignMsg);
+            }
+            await notifyAdmins(`👤 Лид назначен\n\nЛид: <b>${leadName}</b>\nНазначен: ${newAssignedTo}`);
+          }
+          showToast('Saved', 'success');
+          onUpdated();
+          loadDetails();
+        } catch (err) {
+          showToast('Save failed: ' + err.message, 'error');
+        } finally {
+          setSaving(false);
+        }
+      };
+
+      const createProposal = async () => {
+        if (!propTitle.trim()) { showToast('Title required', 'error'); return; }
+        const amt = parseFloat(propAmount);
+        if (!amt || amt <= 0) { showToast('Valid amount required', 'error'); return; }
+        if (!propValidUntil) { showToast('Valid until date required', 'error'); return; }
+        setSavingProposal(true);
+        try {
+          const { error } = await supabase.from('proposals').insert({
+            telegram_id: lead.telegram_id,
+            title: propTitle.trim(),
+            amount: amt,
+            currency: propCurrency,
+            valid_until: propValidUntil,
+            status: 'sent',
+            created_by: getCrmUserName() || 'CRM',
+          });
+          if (error) throw error;
+          setPropTitle(''); setPropAmount(''); setPropValidUntil('');
+          setShowProposalForm(false);
+          showToast('Proposal created', 'success');
+          loadDetails();
+        } catch (err) {
+          showToast('Failed: ' + err.message, 'error');
+        } finally {
+          setSavingProposal(false);
+        }
+      };
+
+      const updateProposalStatus = async (proposalId, newStatus) => {
+        const { error } = await supabase.from('proposals')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', proposalId);
+        if (error) { showToast('Update failed', 'error'); return; }
+        showToast('Proposal updated', 'success');
+        loadDetails();
+      };
+
+      const addComment = async () => {
+        if (!newComment.trim()) return;
+        try {
+          const commentText = newComment.trim();
+          const author = getCrmUserName() || 'CRM';
+          const { error } = await supabase.from('comments').insert({
+            telegram_id: lead.telegram_id,
+            author,
+            content: commentText,
+            is_pinned: false,
+          });
+          if (error) throw error;
+          const leadName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || lead.username || 'Unknown';
+          const msg = `💬 Новый комментарий\n\nЛид: <b>${leadName}</b>\nАвтор: ${author}\nКомментарий: ${commentText}`;
+          await notifyAdmins(msg);
+          setNewComment('');
+          loadDetails();
+        } catch (err) {
+          showToast('Comment failed: ' + err.message, 'error');
+        }
+      };
+
+      const togglePin = async (c) => {
+        try {
+          await supabase.from('comments').update({ is_pinned: !c.is_pinned }).eq('id', c.id);
+          loadDetails();
+        } catch (err) {
+          showToast('Pin failed', 'error');
+        }
+      };
+
+      return (
+        <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+          <div className="panel">
+            <div className="panel-header">
+              <h2>{[lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.username || 'Lead'}</h2>
+              <button className="btn" onClick={onClose}>✕</button>
+            </div>
+
+            <div className="panel-section">
+              <h3>Contact Info</h3>
+              <div className="field-row"><span className="label">Telegram</span><span>{lead.username ? <a href={`https://t.me/${lead.username}`} target="_blank">@{lead.username}</a> : '—'}</span></div>
+              <div className="field-row"><span className="label">Phone</span><span>{lead.phone || '—'}</span></div>
+              <div className="field-row"><span className="label">Email</span><span>{lead.email || '—'}</span></div>
+              <div className="field-row"><span className="label">Source</span><span>{lead.source || '—'}</span></div>
+              <div className="field-row"><span className="label">Language</span><span>{lead.preferred_lang || lead.language_code || '—'}</span></div>
+              <div className="field-row">
+                <span className="label">Score</span>
+                <span
+                  style={{ color: scoreColor(lead.lead_score), fontWeight: 700, cursor: 'pointer', textDecoration: 'underline dotted' }}
+                  title="Click for breakdown"
+                  onClick={() => setShowScoreBreakdown(s => !s)}
+                >{lead.lead_score ?? 0} ℹ️</span>
+              </div>
+              {showScoreBreakdown && (() => {
+                const bd = computeScoreBreakdown(lead, events, convo);
+                return (
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 8 }}>
+                    {bd.items.length === 0 && <div style={{ color: '#94a3b8' }}>Нет баллов пока</div>}
+                    {bd.items.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                        <span>{item.label}</span><span style={{ fontWeight: 600, color: '#22c55e' }}>+{item.pts}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 6, paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                      <span>Итого</span><span>{bd.total}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="field-row"><span className="label">Created</span><span>{formatDate(lead.created_at)}</span></div>
+              {(() => {
+                const badge = responseTimeBadge(lead);
+                if (!badge) return null;
+                return (
+                  <div className="field-row">
+                    <span className="label">Response</span>
+                    <span style={{ color: badge.color, fontWeight: 600, fontSize: 13 }} title={badge.title}>{badge.text}</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="panel-section">
+              <h3>Status & Assignment</h3>
+              <div className="form-group">
+                <label>Status</label>
+                <select value={status} onChange={e => setStatus(e.target.value)}>
+                  {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                </select>
+              </div>
+              {status === 'lost' && (
+                <div className="form-group">
+                  <label>Rejection Reason</label>
+                  <select value={rejection} onChange={e => setRejection(e.target.value)}>
+                    <option value="">—</option>
+                    {rejectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="form-group">
+                <label>Assigned To</label>
+                {teamMembers.length > 0 ? (
+                  <select value={assigned} onChange={e => setAssigned(e.target.value)}>
+                    <option value="">— Unassigned —</option>
+                    {teamMembers.map(m => (
+                      <option key={m.name} value={m.name}>{m.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input value={assigned} onChange={e => setAssigned(e.target.value)} placeholder="Add team members in Settings first" />
+                )}
+              </div>
+              <div className="form-group">
+                <label>Next Follow-up</label>
+                <input
+                  type="datetime-local"
+                  value={followup}
+                  onChange={e => setFollowup(e.target.value)}
+                  style={followup && new Date(followup) < new Date() ? { borderColor: '#ef4444', color: '#ef4444' } : {}}
+                />
+                {followup && new Date(followup) < new Date() && (
+                  <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>⚠️ Просрочено</div>
+                )}
+              </div>
+              <div className="form-group">
+                <label>Follow-up Note</label>
+                <textarea
+                  value={followupNote}
+                  onChange={e => setFollowupNote(e.target.value)}
+                  placeholder="What to discuss..."
+                  rows="2"
+                  style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', fontSize: 14, resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                  Deal Value
+                </label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 5000000"
+                    value={dealValue}
+                    onChange={e => setDealValue(e.target.value)}
+                    style={{ flex: 1, padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13 }}
+                  />
+                  <select
+                    value={dealCurrency}
+                    onChange={e => setDealCurrency(e.target.value)}
+                    style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13 }}
+                  >
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* ── Proposals ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Proposals ({proposals.length})</label>
+                  <button
+                    className="btn btn-primary"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={() => setShowProposalForm(f => !f)}
+                  >
+                    {showProposalForm ? 'Cancel' : '+ Create'}
+                  </button>
+                </div>
+
+                {showProposalForm && (
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, marginBottom: 10 }}>
+                    <input
+                      placeholder="Title (e.g. SMM Package)"
+                      value={propTitle}
+                      onChange={e => setPropTitle(e.target.value)}
+                      style={{ width: '100%', padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 8, fontSize: 13 }}
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input
+                        type="number" min="0" placeholder="Amount"
+                        value={propAmount}
+                        onChange={e => setPropAmount(e.target.value)}
+                        style={{ flex: 1, padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13 }}
+                      />
+                      <select value={propCurrency} onChange={e => setPropCurrency(e.target.value)}
+                        style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13 }}>
+                        <option value="UZS">UZS</option>
+                        <option value="USD">USD</option>
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>Valid until</label>
+                      <input type="date" value={propValidUntil} onChange={e => setPropValidUntil(e.target.value)}
+                        style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, width: '100%' }} />
+                    </div>
+                    <button className="btn btn-primary" style={{ width: '100%' }} onClick={createProposal} disabled={savingProposal}>
+                      {savingProposal ? 'Saving…' : 'Save Proposal'}
+                    </button>
+                  </div>
+                )}
+
+                {proposals.length === 0 ? (
+                  <div style={{ fontSize: 13, color: '#94a3b8' }}>No proposals yet.</div>
+                ) : (
+                  proposals.map(p => {
+                    const statusColors = { sent: '#6366f1', accepted: '#22c55e', rejected: '#ef4444', expired: '#94a3b8' };
+                    const amtFmt = Number(p.amount).toLocaleString();
+                    return (
+                      <div key={p.id} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</span>
+                          <span style={{ background: statusColors[p.status] || '#94a3b8', color: '#fff', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                            {p.status}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 13, color: '#64748b' }}>{amtFmt} {p.currency} · until {p.valid_until}</div>
+                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>by {p.created_by || '—'}</div>
+                        {p.status === 'sent' && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                            <button className="btn" style={{ fontSize: 12, padding: '3px 10px', color: '#22c55e', borderColor: '#22c55e' }}
+                              onClick={() => updateProposalStatus(p.id, 'accepted')}>Accept</button>
+                            <button className="btn" style={{ fontSize: 12, padding: '3px 10px', color: '#ef4444', borderColor: '#ef4444' }}
+                              onClick={() => updateProposalStatus(p.id, 'rejected')}>Reject</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+
+            <div className="panel-section">
+              <h3>Conversation</h3>
+              <div className="chat-container">
+                {convo.length === 0 && <div className="empty">No messages</div>}
+                {convo.map(m => (
+                  <div key={m.id} className={`chat-bubble ${m.role === 'user' ? 'chat-user' : 'chat-assistant'}`}>
+                    {m.message}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="panel-section">
+              <h3>Activity Timeline</h3>
+              {events.length === 0 && <div className="empty">No events</div>}
+              {events.map(e => (
+                <div key={e.id} className="activity-item">
+                  <span className="icon">{EVENT_ICONS[e.event_type] || '•'}</span>
+                  <span>{e.event_type} {e.event_data ? <span style={{ color: '#64748b' }}>— {typeof e.event_data === 'object' ? JSON.stringify(e.event_data) : e.event_data}</span> : ''}</span>
+                  <span className="time">{timeAgo(e.created_at)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="panel-section">
+              <h3>Comments</h3>
+              {comments.length === 0 && <div className="empty">No comments</div>}
+              {comments.map(c => (
+                <div key={c.id} className={`comment ${c.is_pinned ? 'pinned' : ''}`}>
+                  <div className="meta">
+                    <span>{c.is_pinned ? '📌 ' : ''}{c.author} · {timeAgo(c.created_at)}</span>
+                    <button className="btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => togglePin(c)}>
+                      {c.is_pinned ? 'Unpin' : 'Pin'}
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 4 }}>{c.content}</div>
+                </div>
+              ))}
+              <div style={{ marginTop: 10 }}>
+                <textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Add a comment..." rows="2" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', fontSize: 14 }} />
+                <button className="btn btn-primary" style={{ marginTop: 6 }} onClick={addComment}>Add Comment</button>
+              </div>
+            </div>
+
+            <div className="panel-section">
+              <h3>Status History</h3>
+              {history.length === 0 && <div className="empty">No history</div>}
+              {history.map(h => (
+                <div key={h.id} style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b' }}>{h.old_status || '—'}</span> → <strong>{h.new_status}</strong>
+                  <span style={{ color: '#94a3b8', marginLeft: 8, fontSize: 12 }}>by {h.changed_by || '—'} · {timeAgo(h.created_at)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Kanban
+    function Kanban({ showToast, refreshKey, onOpenLead }) {
+      const [leads, setLeads] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [dragOverCol, setDragOverCol] = useState(null);
+
+      const load = useCallback(async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase.from('leads').select('*').order('updated_at', { ascending: false });
+          if (error) throw error;
+          setLeads(data || []);
+        } catch (e) {
+          showToast('Failed to load: ' + e.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }, [showToast]);
+
+      useEffect(() => { load(); }, [load, refreshKey]);
+
+      const handleDragStart = (e, lead) => {
+        e.dataTransfer.setData('leadId', lead.id);
+        e.dataTransfer.setData('oldStatus', lead.status || 'new');
+      };
+
+      const handleDrop = async (e, newStatus) => {
+        e.preventDefault();
+        setDragOverCol(null);
+        const leadId = e.dataTransfer.getData('leadId');
+        const oldStatus = e.dataTransfer.getData('oldStatus');
+        if (!leadId || oldStatus === newStatus) return;
+        const lead = leads.find(l => String(l.id) === String(leadId));
+        if (!lead) return;
+        setLeads(ls => ls.map(l => l.id === lead.id ? { ...l, status: newStatus } : l));
+        try {
+          const { error } = await supabase.from('leads').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', lead.id);
+          if (error) throw error;
+          const changer = getCrmUserName() || 'CRM';
+          await supabase.from('status_history').insert({
+            telegram_id: lead.telegram_id, old_status: oldStatus, new_status: newStatus, changed_by: changer,
+          });
+          const leadName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || lead.username || 'Unknown';
+          await notifyAdmins(`🔄 Статус изменён (Kanban)\n\nЛид: <b>${leadName}</b>\nСтарый: ${STATUS_LABELS[oldStatus] || oldStatus}\nНовый: <b>${STATUS_LABELS[newStatus] || newStatus}</b>\nИзменил: ${changer}`);
+          showToast('Status updated', 'success');
+        } catch (err) {
+          showToast('Update failed: ' + err.message, 'error');
+          load();
+        }
+      };
+
+      if (loading) return <div className="center-load"><div className="spinner" /></div>;
+
+      return (
+        <div className="kanban">
+          {STATUSES.map(s => {
+            const colLeads = leads.filter(l => (l.status || 'new') === s);
+            const colRevenue = colLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+            const colCurrency = colLeads.find(l => l.deal_value)?.deal_currency || 'UZS';
+            return (
+              <div
+                key={s}
+                className={`kanban-col ${dragOverCol === s ? 'dragover' : ''}`}
+                onDragOver={e => { e.preventDefault(); setDragOverCol(s); }}
+                onDragLeave={() => setDragOverCol(null)}
+                onDrop={e => handleDrop(e, s)}
+              >
+                <div className="kanban-col-header">
+                  <span className="title" style={{ color: STATUS_COLORS[s] }}>{STATUS_LABELS[s]}</span>
+                  <span style={{ background: STATUS_COLORS[s], color: '#fff', padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{colLeads.length}</span>
+                </div>
+                {colRevenue > 0 && (
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, paddingLeft: 2 }}>
+                    💰 {fmtRevenue(colRevenue, colCurrency)}
+                  </div>
+                )}
+                <div className="kanban-col-cards">
+                  {colLeads.map(l => (
+                    <div
+                      key={l.id}
+                      className="kanban-card"
+                      draggable
+                      onDragStart={e => handleDragStart(e, l)}
+                      onClick={() => onOpenLead(l)}
+                      style={isStale(l) ? { borderLeft: '3px solid #ef4444' } : {}}
+                    >
+                      <div className="name">{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || '—'}</div>
+                      {l.phone && <div style={{ fontSize: 12, color: '#64748b' }}>{l.phone}</div>}
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{l.source || '—'}</div>
+                      <div className="meta">
+                        <span style={{ color: scoreColor(l.lead_score), fontWeight: 700 }}>⚡ {l.lead_score ?? 0}</span>
+                        <span>{timeAgo(l.updated_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function RejectionReasonsManager({ showToast }) {
+      const [reasons, setReasons] = useState([]);
+      const [newLabel, setNewLabel] = useState('');
+
+      const load = () => {
+        supabase.from('rejection_reasons').select('id, label, sort_order').order('sort_order').then(({ data }) => {
+          setReasons(data || []);
+        });
+      };
+      React.useEffect(load, []);
+
+      const add = async () => {
+        const label = newLabel.trim();
+        if (!label) { showToast('Label required', 'error'); return; }
+        const maxOrder = reasons.length ? Math.max(...reasons.map(r => r.sort_order)) : 0;
+        const { error } = await supabase.from('rejection_reasons').insert({ label, sort_order: maxOrder + 1 });
+        if (error) { showToast(error.message, 'error'); return; }
+        setNewLabel('');
+        showToast('Reason added', 'success');
+        load();
+      };
+
+      const remove = async (id) => {
+        await supabase.from('rejection_reasons').delete().eq('id', id);
+        showToast('Removed', 'success');
+        load();
+      };
+
+      return (
+        <div>
+          {reasons.length === 0 ? (
+            <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>No reasons yet.</div>
+          ) : (
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 12 }}>
+              {reasons.map(r => (
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <span style={{ flex: 1 }}>{r.label}</span>
+                  <button onClick={() => remove(r.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16 }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={newLabel}
+              onChange={e => setNewLabel(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && add()}
+              placeholder="e.g. Price too high"
+              style={{ flex: 1, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }}
+            />
+            <button className="btn btn-primary" onClick={add}>Add</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Settings
+    function Settings({ showToast }) {
+      const [members, setMembers] = React.useState([]);
+      const [newName, setNewName] = useState('');
+      const [newTgId, setNewTgId] = useState('');
+      const [newPw, setNewPw] = useState('');
+      const [userName, setUserName] = useState(() => getCrmUserName());
+
+      React.useEffect(() => {
+        getTeamMembers().then(setMembers);
+      }, []);
+
+      const saveUserName = () => {
+        const name = userName.trim();
+        localStorage.setItem('crm_user_name', name);
+        showToast(name ? `Name saved: ${name}` : 'Name cleared', 'success');
+      };
+
+      const addMember = async () => {
+        const name = newName.trim();
+        const tgId = parseInt(newTgId.trim(), 10);
+        if (!name) { showToast('Name required', 'error'); return; }
+        if (!tgId || Number.isNaN(tgId)) { showToast('Valid Telegram ID required', 'error'); return; }
+        const { error } = await supabase.from('team_members').insert({ name, telegram_id: tgId });
+        if (error) { showToast(error.message, 'error'); return; }
+        setNewName(''); setNewTgId('');
+        showToast('Member added', 'success');
+        getTeamMembers().then(setMembers);
+      };
+
+      const removeMember = async (id) => {
+        await supabase.from('team_members').delete().eq('id', id);
+        getTeamMembers().then(setMembers);
+      };
+
+      const exportCsv = async () => {
+        try {
+          const { data, error } = await supabase.from('leads').select('*');
+          if (error) throw error;
+          if (!data || data.length === 0) { showToast('No data to export', 'error'); return; }
+          const keys = Object.keys(data[0]);
+          const rows = [keys.join(',')];
+          data.forEach(r => {
+            rows.push(keys.map(k => {
+              const v = r[k];
+              if (v == null) return '';
+              const s = String(v).replace(/"/g, '""');
+              return /[",\n]/.test(s) ? `"${s}"` : s;
+            }).join(','));
+          });
+          const csv = rows.join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `leads_${new Date().toISOString().slice(0, 10)}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('Exported', 'success');
+        } catch (e) {
+          showToast('Export failed: ' + e.message, 'error');
+        }
+      };
+
+      const changePw = () => {
+        if (!newPw) return;
+        sessionStorage.setItem('crm_password_override', newPw);
+        setNewPw('');
+        showToast('Password changed for session. Update CONFIG.CRM_PASSWORD in source to persist.', 'success');
+      };
+
+      const maskedUrl = CONFIG.SUPABASE_URL.slice(0, 20) + '...';
+
+      return (
+        <div style={{ maxWidth: 600 }}>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 4 }}>Your Name</h3>
+            <p style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>Shown in comments, status changes, and notifications.</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={userName}
+                onChange={e => setUserName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveUserName()}
+                placeholder="e.g. Alisher"
+                style={{ flex: 1, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }}
+              />
+              <button className="btn btn-primary" onClick={saveUserName}>Save</button>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Team Members</h3>
+            {members.length === 0 ? (
+              <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>No team members yet. Add one below.</div>
+            ) : (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 12 }}>
+                {members.map((m) => (
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderBottom: '1px solid #e2e8f0' }}>
+                    <span style={{ flex: 1, fontWeight: 500 }}>{m.name}</span>
+                    <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: 13 }}>{m.telegram_id}</span>
+                    <button className="btn" style={{ padding: '2px 8px' }} onClick={() => removeMember(m.id)}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="text" value={newName} onChange={e => setNewName(e.target.value)}
+                placeholder="Name"
+                style={{ flex: 1, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }}
+              />
+              <input
+                type="text" value={newTgId} onChange={e => setNewTgId(e.target.value)}
+                placeholder="Telegram ID"
+                style={{ flex: 1, padding: 8, border: '1px solid #e2e8f0', borderRadius: 6 }}
+              />
+              <button className="btn btn-primary" onClick={addMember}>Add</button>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Rejection Reasons</h3>
+            <RejectionReasonsManager showToast={showToast} />
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Export Data</h3>
+            <button className="btn btn-primary" onClick={exportCsv}>Download Leads CSV</button>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Change Password</h3>
+            <input
+              type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
+              placeholder="New password"
+              style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 8 }}
+            />
+            <button className="btn btn-primary" onClick={changePw}>Update Password</button>
+            <p style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>
+              Changes apply to current session. Edit CONFIG.CRM_PASSWORD in source to make permanent.
+            </p>
+          </div>
+
+          <div className="card">
+            <h3 style={{ marginBottom: 12 }}>Supabase</h3>
+            <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#64748b' }}>{maskedUrl}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── CRM AI TOOLS (browser-side, mirrors bot/services/crm_ai.py) ──────────
+
+    const CRM_TOOLS = [
+      {
+        type: 'function',
+        function: {
+          name: 'query_leads',
+          description: 'Filter leads from the database. Returns up to 20 matching leads ordered by score desc.',
+          parameters: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', description: 'Filter by status: new/contacted/qualified/proposal_sent/won/lost' },
+              source: { type: 'string', description: 'Filter by traffic source (e.g. meta_general, organic)' },
+              min_score: { type: 'integer', description: 'Minimum lead score (inclusive)' },
+              has_phone: { type: 'boolean', description: 'If true, only leads with a phone number' },
+              days_old: { type: 'integer', description: 'Only leads created in the last N days' },
+            },
+            required: [],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'find_lead_by_name',
+          description: 'Find leads by partial first or last name match.',
+          parameters: {
+            type: 'object',
+            properties: { name: { type: 'string', description: 'Name or partial name to search for' } },
+            required: ['name'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'query_conversations',
+          description: 'Get the last 20 conversation messages for a specific lead.',
+          parameters: {
+            type: 'object',
+            properties: { telegram_id: { type: 'integer', description: "The lead's Telegram ID" } },
+            required: ['telegram_id'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'get_analytics',
+          description: 'Get aggregate analytics over all leads.',
+          parameters: {
+            type: 'object',
+            properties: {
+              metric: {
+                type: 'string',
+                enum: ['count_by_status', 'count_by_source', 'avg_score', 'conversion_rate', 'total_count'],
+                description: 'Which aggregate metric to compute',
+              },
+            },
+            required: ['metric'],
+          },
+        },
+      },
+    ];
+
+    async function executeCrmTool(name, args) {
+      try {
+        if (name === 'query_leads') {
+          let q = supabase.from('leads').select('telegram_id, first_name, last_name, username, phone, status, source, lead_score, created_at, first_contact_at');
+          if (args.status) q = q.eq('status', args.status);
+          if (args.source) q = q.eq('source', args.source);
+          if (args.min_score != null) q = q.gte('lead_score', args.min_score);
+          if (args.has_phone) q = q.not('phone', 'is', null);
+          if (args.days_old) {
+            const since = new Date(Date.now() - args.days_old * 86400000).toISOString();
+            q = q.gte('created_at', since);
+          }
+          const { data } = await q.order('lead_score', { ascending: false }).limit(20);
+          return JSON.stringify(data || []);
+        }
+        if (name === 'find_lead_by_name') {
+          const { data } = await supabase.from('leads')
+            .select('telegram_id, first_name, last_name, username, phone, status, source, lead_score')
+            .or(`first_name.ilike.%${args.name}%,last_name.ilike.%${args.name}%`)
+            .limit(10);
+          return JSON.stringify(data || []);
+        }
+        if (name === 'query_conversations') {
+          const { data } = await supabase.from('conversations')
+            .select('role, message, created_at')
+            .eq('telegram_id', args.telegram_id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+          return JSON.stringify((data || []).reverse());
+        }
+        if (name === 'get_analytics') {
+          const { data: leads } = await supabase.from('leads').select('status, source, lead_score, phone');
+          const all = leads || [];
+          if (args.metric === 'total_count') return JSON.stringify({ total: all.length });
+          if (args.metric === 'count_by_status') {
+            const counts = {};
+            all.forEach(l => { counts[l.status || 'new'] = (counts[l.status || 'new'] || 0) + 1; });
+            return JSON.stringify(counts);
+          }
+          if (args.metric === 'count_by_source') {
+            const counts = {};
+            all.forEach(l => { counts[l.source || 'organic'] = (counts[l.source || 'organic'] || 0) + 1; });
+            return JSON.stringify(Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1])));
+          }
+          if (args.metric === 'avg_score') {
+            const scores = all.map(l => l.lead_score || 0);
+            const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10 : 0;
+            return JSON.stringify({ avg_score: avg, sample_size: all.length });
+          }
+          if (args.metric === 'conversion_rate') {
+            const won = all.filter(l => l.status === 'won').length;
+            const rate = all.length ? Math.round(won / all.length * 1000) / 10 : 0;
+            return JSON.stringify({ won, total: all.length, conversion_rate_pct: rate });
+          }
+          return JSON.stringify({ error: 'unknown metric' });
+        }
+        return JSON.stringify({ error: `unknown tool: ${name}` });
+      } catch (e) {
+        return JSON.stringify({ error: e.message });
+      }
+    }
+
+    async function askCrmAI(question, messageHistory) {
+      const today = new Date().toISOString().slice(0, 10);
+      const systemPrompt = `Ты CRM-аналитик. Сегодня ${today}. Статусы: new/contacted/qualified/proposal_sent/won/lost. Отвечай на русском, кратко и с именами/цифрами.`;
+      const messages = [{ role: 'system', content: systemPrompt }, ...messageHistory, { role: 'user', content: question }];
+
+      for (let round = 0; round < 5; round++) {
+        // Calls /api/ask (Vercel serverless) — OpenAI key never exposed in browser
+        const res = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o-mini', messages, tools: CRM_TOOLS, tool_choice: 'auto' }),
+        });
+        if (!res.ok) throw new Error(`AI error ${res.status}: ${await res.text()}`);
+        const data = await res.json();
+        const msg = data.choices[0].message;
+        if (!msg.tool_calls || msg.tool_calls.length === 0) return msg.content || 'Нет ответа.';
+        messages.push(msg);
+        for (const tc of msg.tool_calls) {
+          const args = JSON.parse(tc.function.arguments);
+          const result = await executeCrmTool(tc.function.name, args);
+          messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
+        }
+      }
+      return 'Превышен лимит запросов. Переформулируйте вопрос.';
+    }
+
+    const EXAMPLE_QUESTIONS = [
+      'Топ 5 лидов по баллам',
+      'Лиды из meta без телефона',
+      'Сколько конвертировалось?',
+      'Статистика по статусам',
+    ];
+
+    function AskAI({ open, onClose }) {
+      const [messages, setMessages] = useState([]);
+      const [input, setInput] = useState('');
+      const [loading, setLoading] = useState(false);
+      const messagesEndRef = useRef(null);
+      const inputRef = useRef(null);
+
+      useEffect(() => {
+        if (messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }, [messages, loading]);
+
+      useEffect(() => {
+        if (open && inputRef.current) setTimeout(() => inputRef.current.focus(), 50);
+      }, [open]);
+
+      const send = async (text) => {
+        const q = text || input.trim();
+        if (!q || loading) return;
+        setInput('');
+        setMessages(prev => [...prev, { role: 'user', content: q }]);
+        setLoading(true);
+        try {
+          const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+          const answer = await askCrmAI(q, history);
+          setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
+        } catch (e) {
+          setMessages(prev => [...prev, { role: 'assistant', content: `❌ Ошибка: ${e.message}` }]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleKey = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
+
+      return (
+        <div className={`ai-panel${open ? ' open' : ''}`}>
+          <div className="ai-panel-header">
+            <span>🤖 Ask AI</span>
+            <button className="ai-panel-close" onClick={onClose}>×</button>
+          </div>
+          {messages.length === 0 && !loading && (
+            <div className="ai-examples">
+              {EXAMPLE_QUESTIONS.map(q => (
+                <button key={q} className="ai-example-chip" onClick={() => send(q)}>{q}</button>
+              ))}
+            </div>
+          )}
+          <div className="ai-messages">
+            {messages.map((m, i) => (
+              <div key={i} className={`ai-msg ${m.role}`}>{m.content}</div>
+            ))}
+            {loading && <div className="ai-msg loading">⏳ Анализирую...</div>}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="ai-input-row">
+            <textarea
+              ref={inputRef}
+              className="ai-input"
+              rows="2"
+              placeholder="Спросите о лидах..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+            />
+            <button className="ai-send-btn" onClick={() => send()} disabled={loading || !input.trim()}>➤</button>
+          </div>
+        </div>
+      );
+    }
+
+    function Sources({ showToast, refreshKey }) {
+      const [rows, setRows] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      const load = useCallback(async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase.from('leads')
+            .select('source, status, deal_value, deal_currency');
+          if (error) throw error;
+
+          // Aggregate by source
+          const map = {};
+          (data || []).forEach(l => {
+            const src = l.source || 'direct';
+            if (!map[src]) map[src] = { source: src, count: 0, converted: 0, revenue: 0 };
+            map[src].count++;
+            if (l.status === 'converted') {
+              map[src].converted++;
+              map[src].revenue += l.deal_value || 0;
+            }
+          });
+
+          const result = Object.values(map).sort((a, b) => b.count - a.count);
+          setRows(result);
+        } catch (e) {
+          showToast('Failed to load sources: ' + e.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }, [showToast]);
+
+      useEffect(() => { load(); }, [load, refreshKey]);
+
+      if (loading) return <div className="center-load"><div className="spinner" /></div>;
+
+      const totalLeads = rows.reduce((s, r) => s + r.count, 0);
+      const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
+      const totalConverted = rows.reduce((s, r) => s + r.converted, 0);
+
+      return (
+        <div className="content-area" style={{ padding: 24 }}>
+          <h2 style={{ marginBottom: 16, fontSize: 18, fontWeight: 700 }}>Sources ROI</h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+            {[
+              { label: 'Total Leads', value: totalLeads },
+              { label: 'Converted', value: totalConverted },
+              { label: 'Total Revenue', value: fmtRevenue(totalRevenue, 'UZS') || '0 UZS' },
+            ].map(s => (
+              <div key={s.label} className="card" style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#3b82f6' }}>{s.value}</div>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table className="leads-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '12px 16px' }}>Source</th>
+                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>Leads</th>
+                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>Converted</th>
+                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>Conv. Rate</th>
+                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>Revenue (UZS)</th>
+                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>Avg Deal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => {
+                  const rate = r.count ? ((r.converted / r.count) * 100).toFixed(1) : '0.0';
+                  const avg = r.converted ? fmtRevenue(r.revenue / r.converted, 'UZS') : '—';
+                  return (
+                    <tr key={r.source}>
+                      <td style={{ padding: '10px 16px', fontWeight: 500 }}>{r.source}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>{r.count}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>{r.converted}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                        <span style={{ color: parseFloat(rate) > 10 ? '#22c55e' : '#64748b', fontWeight: 600 }}>
+                          {rate}%
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                        {r.revenue > 0 ? fmtRevenue(r.revenue, 'UZS') : '—'}
+                      </td>
+                      <td style={{ padding: '10px 16px', textAlign: 'right', color: '#64748b' }}>{avg}</td>
+                    </tr>
+                  );
+                })}
+                {rows.length === 0 && (
+                  <tr><td colSpan="6" style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>No source data yet</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [authed, setAuthed] = useState(sessionStorage.getItem('crm_auth') === '1');
+      const [tab, setTab] = useState('dashboard');
+      const [search, setSearch] = useState('');
+      const [debouncedSearch, setDebouncedSearch] = useState('');
+      const [selectedLead, setSelectedLead] = useState(null);
+      const [refreshKey, setRefreshKey] = useState(0);
+      const [newLeadsCount, setNewLeadsCount] = useState(0);
+      const [showAI, setShowAI] = useState(false);
+      const [toastEl, showToast] = useToast();
+
+      useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+      }, [search]);
+
+      useEffect(() => {
+        if (!authed) return;
+        (async () => {
+          try {
+            const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+            const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true }).gte('created_at', since);
+            setNewLeadsCount(count || 0);
+          } catch { }
+        })();
+      }, [authed, refreshKey]);
+
+      if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
+
+      return (
+        <div className="app">
+          <div className="sidebar">
+            <div className="logo">⚡ Lead CRM</div>
+            <div className="nav">
+              <a className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>📊 Dashboard</a>
+              <a className={tab === 'leads' ? 'active' : ''} onClick={() => setTab('leads')}>👥 Leads</a>
+              <a className={tab === 'pipeline' ? 'active' : ''} onClick={() => setTab('pipeline')}>🎯 Pipeline</a>
+              <a className={tab === 'sources' ? 'active' : ''} onClick={() => setTab('sources')}>📡 Sources ROI</a>
+              <a className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}>⚙️ Settings</a>
+            </div>
+          </div>
+
+          <div className="main">
+            <div className="topbar">
+              <input
+                className="search"
+                placeholder="Search leads by name, username, or phone..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <div className="topbar-right">
+                {newLeadsCount > 0 && <span className="badge-new">{newLeadsCount} new</span>}
+                <button className="ai-toggle-btn" onClick={() => setShowAI(s => !s)}>🤖 Ask AI</button>
+                <button className="btn" onClick={() => setRefreshKey(k => k + 1)}>🔄 Refresh</button>
+                <button className="btn" onClick={() => { sessionStorage.removeItem('crm_auth'); location.reload(); }}>Logout</button>
+              </div>
+            </div>
+
+            <div className="content">
+              {tab === 'dashboard' && <Dashboard showToast={showToast} refreshKey={refreshKey} />}
+              {tab === 'leads' && <LeadsTable showToast={showToast} refreshKey={refreshKey} search={debouncedSearch} onOpenLead={setSelectedLead} />}
+              {tab === 'pipeline' && <Kanban showToast={showToast} refreshKey={refreshKey} onOpenLead={setSelectedLead} />}
+              {tab === 'sources' && <Sources showToast={showToast} refreshKey={refreshKey} />}
+              {tab === 'settings' && <Settings showToast={showToast} />}
+            </div>
+          </div>
+
+          {selectedLead && (
+            <LeadPanel
+              lead={selectedLead}
+              onClose={() => setSelectedLead(null)}
+              showToast={showToast}
+              onUpdated={() => setRefreshKey(k => k + 1)}
+            />
+          )}
+          <AskAI open={showAI} onClose={() => setShowAI(false)} />
+          {toastEl}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+
+</html>
