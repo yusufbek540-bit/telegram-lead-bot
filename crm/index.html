@@ -2658,7 +2658,7 @@
             return JSON.stringify({ avg_score: avg, sample_size: all.length });
           }
           if (args.metric === 'conversion_rate') {
-            const won = all.filter(l => l.status === 'won').length;
+            const won = all.filter(l => l.status === 'converted').length;
             const rate = all.length ? Math.round(won / all.length * 1000) / 10 : 0;
             return JSON.stringify({ won, total: all.length, conversion_rate_pct: rate });
           }
@@ -2811,7 +2811,7 @@
              sourcesAssigned.forEach(src => {
                 if (!map[src]) map[src] = { source: src, count: 0, converted: 0, revenue: 0 };
                 map[src].count += weight;
-                if (l.status === 'won') {
+                if (l.status === 'converted') {
                   map[src].converted += weight;
                   map[src].revenue += (l.deal_value || 0) * weight;
                 }
@@ -2920,7 +2920,7 @@
             supabase.from('team_members').select('*'),
             supabase.from('leads').select('*'),
             supabase.from('events').select('created_at').eq('event_type', 'bot_start'),
-            supabase.from('status_history').select('created_at').eq('new_status', 'won')
+            supabase.from('status_history').select('created_at').eq('new_status', 'converted')
           ]);
           setMembers(mRes.data || []);
           setLeads(lRes.data || []);
@@ -2956,7 +2956,7 @@
 
       const lb = members.map(m => {
          const assigned = leads.filter(l => l.assigned_to === m.name);
-         const won = assigned.filter(l => l.status === 'won');
+         const won = assigned.filter(l => l.status === 'converted');
          const revenue = won.reduce((sum, l) => sum + (l.deal_value || 0), 0);
          return { ...m, assigned: assigned.length, won: won.length, revenue };
       }).sort((a, b) => b.revenue - a.revenue);
