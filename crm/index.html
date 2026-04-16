@@ -931,11 +931,12 @@
       const [lostReasons, setLostReasons] = useState([]);
       const [activity, setActivity] = useState([]);
       const [priorities, setPriorities] = useState({ newUncontacted: [], overdueFollowups: [], hotNoPhone: [], todayFollowups: [] });
+      const [duplicates, setDuplicates] = useState([]);
 
       const load = useCallback(async () => {
         setLoading(true);
         try {
-          const { data: leads, error: le } = await supabase.from('leads').select('id, status, phone, created_at, lead_score, first_name, last_name, telegram_id, source, first_contact_at, last_activity_at, rejection_reason');
+          const { data: leads, error: le } = await supabase.from('leads').select('id, status, phone, created_at, lead_score, first_name, last_name, telegram_id, source, first_contact_at, last_activity_at, rejection_reason, duplicate_of');
           if (le) throw le;
           const total = leads.length;
           const weekAgo = Date.now() - 7 * 86400000;
@@ -1041,6 +1042,10 @@
             hotNoPhone: leads.filter(l => (l.lead_score || 0) > 50 && !l.phone),
             todayFollowups: todayRem.map(enrichReminder),
           });
+
+          // Duplicates
+          const dups = leads.filter(l => l.duplicate_of);
+          setDuplicates(dups);
         } catch (e) {
           console.error(e);
           showToast('Failed to load dashboard: ' + e.message, 'error');
@@ -1057,6 +1062,18 @@
 
       return (
         <div>
+          {duplicates.length > 0 && (
+            <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid #f59e0b', background: '#fffbeb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 22 }}>⚠️</span>
+                <div>
+                  <div style={{ fontWeight: 600, color: '#92400e' }}>{duplicates.length} potential duplicate lead{duplicates.length > 1 ? 's' : ''} detected</div>
+                  <div style={{ fontSize: 13, color: '#78350f', marginTop: 2 }}>Open the lead panel to review and merge duplicates.</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {(priorities.newUncontacted.length > 0 || priorities.overdueFollowups.length > 0 || priorities.hotNoPhone.length > 0 || priorities.todayFollowups.length > 0) && (
             <div className="card" style={{ marginBottom: 16 }}>
               <h3 style={{ marginBottom: 12 }}>🎯 Сегодня в приоритете</h3>
@@ -1532,6 +1549,14 @@
               <button className="btn" onClick={onClose}>✕</button>
             </div>
 
+            {lead.duplicate_of && (
+              <div style={{ margin: '0 0 12px 0', padding: '10px 14px', background: '#fef3c7', borderLeft: '4px solid #f59e0b', borderRadius: 6 }}>
+                <span style={{ fontWeight: 600, color: '#92400e' }}>⚠️ Duplicate Lead</span>
+                <span style={{ color: '#78350f', fontSize: 13, marginLeft: 8 }}>
+                  This lead is flagged as a duplicate of lead #{lead.duplicate_of}.
+                </span>
+              </div>
+            )}
             <div className="panel-section">
               <h3>Contact Info</h3>
               <div className="field-row"><span className="label">Telegram</span><span>{lead.username ? <a href={`https://t.me/${lead.username}`} target="_blank">@{lead.username}</a> : '—'}</span></div>
@@ -2004,6 +2029,293 @@
             />
             <button className="btn btn-primary" onClick={add}>Add</button>
           </div>
+        </div>
+      );
+    }
+
+    // ── CAMPAIGNS ────────────────────────────────────────────────────────────
+    function CampaignsTab({ showToast }) {
+      const [campaigns, setCampaigns] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [view, setView] = useState('list'); // 'list' | 'builder' | 'delivery'
+      const [selectedCampaign, setSelectedCampaign] = useState(null);
+
+      // Builder state
+      const [bName, setBName] = useState('');
+      const [bMsgUz, setBMsgUz] = useState('');
+      const [bMsgRu, setBMsgRu] = useState('');
+      const [bStatus, setBStatus] = useState('');
+      const [bSource, setBSource] = useState('');
+      const [bLang, setBLang] = useState('');
+      const [bInactiveDays, setBInactiveDays] = useState('');
+      const [bTag, setBTag] = useState('');
+      const [bScheduled, setBScheduled] = useState('');
+      const [recipientCount, setRecipientCount] = useState(null);
+      const [countLoading, setCountLoading] = useState(false);
+      const [saving, setSaving] = useState(false);
+
+      // Delivery state
+      const [deliveries, setDeliveries] = useState([]);
+      const [delivLoading, setDelivLoading] = useState(false);
+
+      const loadCampaigns = useCallback(async () => {
+        setLoading(true);
+        try {
+          const { data } = await supabase.from('campaigns').select('*').order('created_at', { ascending: false });
+          setCampaigns(data || []);
+        } catch(e) { showToast('Failed to load campaigns', 'error'); }
+        finally { setLoading(false); }
+      }, [showToast]);
+
+      useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
+
+      const buildFilters = () => {
+        const f = {};
+        if (bStatus) f.status = bStatus;
+        if (bSource) f.source = bSource;
+        if (bLang) f.language = bLang;
+        if (bInactiveDays) f.inactive_days = parseInt(bInactiveDays);
+        if (bTag) f.tag = bTag;
+        return f;
+      };
+
+      const previewCount = async () => {
+        setCountLoading(true);
+        setRecipientCount(null);
+        try {
+          const filters = buildFilters();
+          let query = supabase.from('leads').select('telegram_id, updated_at, preferred_lang, duplicate_of');
+          if (filters.status) query = query.eq('status', filters.status);
+          if (filters.source) query = query.eq('source', filters.source);
+          if (filters.language) query = query.eq('preferred_lang', filters.language);
+          const { data } = await query;
+          let leads = (data || []).filter(l => !l.duplicate_of);
+          if (filters.inactive_days) {
+            const cutoff = new Date(Date.now() - filters.inactive_days * 86400000);
+            leads = leads.filter(l => l.updated_at && new Date(l.updated_at) < cutoff);
+          }
+          if (filters.tag) {
+            const { data: tagged } = await supabase.from('lead_tags').select('telegram_id').eq('tag', filters.tag);
+            const taggedIds = new Set((tagged || []).map(t => t.telegram_id));
+            leads = leads.filter(l => taggedIds.has(l.telegram_id));
+          }
+          setRecipientCount(leads.length);
+        } catch(e) { showToast('Preview failed: ' + e.message, 'error'); }
+        finally { setCountLoading(false); }
+      };
+
+      const saveCampaign = async (sendNow) => {
+        if (!bName.trim()) { showToast('Name required', 'error'); return; }
+        if (!bMsgUz.trim() && !bMsgRu.trim()) { showToast('At least one message template required', 'error'); return; }
+        setSaving(true);
+        try {
+          const payload = {
+            name: bName.trim(),
+            message_uz: bMsgUz.trim(),
+            message_ru: bMsgRu.trim(),
+            target_filters: buildFilters(),
+            status: sendNow ? 'scheduled' : 'draft',
+            scheduled_for: sendNow ? (bScheduled || new Date().toISOString()) : (bScheduled || null),
+            created_by: localStorage.getItem('crm_user_name') || 'CRM',
+          };
+          const { error } = await supabase.from('campaigns').insert(payload);
+          if (error) throw error;
+          showToast(sendNow ? 'Campaign scheduled!' : 'Draft saved!', 'success');
+          setBName(''); setBMsgUz(''); setBMsgRu(''); setBStatus(''); setBSource('');
+          setBLang(''); setBInactiveDays(''); setBTag(''); setBScheduled(''); setRecipientCount(null);
+          setView('list');
+          loadCampaigns();
+        } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
+        finally { setSaving(false); }
+      };
+
+      const deleteCampaign = async (id) => {
+        if (!confirm('Delete this campaign?')) return;
+        await supabase.from('campaigns').delete().eq('id', id);
+        loadCampaigns();
+      };
+
+      const openDelivery = async (camp) => {
+        setSelectedCampaign(camp);
+        setDelivLoading(true);
+        setView('delivery');
+        try {
+          const { data } = await supabase.from('campaign_deliveries').select('*').eq('campaign_id', camp.id).order('created_at', { ascending: false });
+          setDeliveries(data || []);
+        } catch(e) { showToast('Failed to load deliveries', 'error'); }
+        finally { setDelivLoading(false); }
+      };
+
+      const statusBadge = (s) => {
+        const map = { draft: ['#f1f5f9', '#64748b'], scheduled: ['#fef3c7','#d97706'], sending: ['#dbeafe','#2563eb'], sent: ['#dcfce7','#166534'], failed: ['#fee2e2','#b91c1c'] };
+        const [bg, color] = map[s] || map.draft;
+        return <span style={{ background: bg, color, padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{s}</span>;
+      };
+
+      if (loading) return <div className="center-load"><div className="spinner" /></div>;
+
+      if (view === 'builder') return (
+        <div style={{ maxWidth: 700 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <button className="btn" onClick={() => setView('list')}>← Back</button>
+            <h2 style={{ margin: 0 }}>New Campaign</h2>
+          </div>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Campaign Details</h3>
+            <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Name</label>
+            <input value={bName} onChange={e => setBName(e.target.value)} placeholder="e.g. April Re-engagement" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 12, boxSizing: 'border-box' }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Message (Uzbek) 🇺🇿</label>
+                <textarea value={bMsgUz} onChange={e => setBMsgUz(e.target.value)} rows={5} placeholder="HTML supported: <b>bold</b>" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Message (Russian) 🇷🇺</label>
+                <textarea value={bMsgRu} onChange={e => setBMsgRu(e.target.value)} rows={5} placeholder="HTML supported: <b>жирный</b>" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Target Audience</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Status filter</label>
+                <select value={bStatus} onChange={e => setBStatus(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff' }}>
+                  <option value="">All statuses</option>
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="qualified">Qualified</option>
+                  <option value="proposal_sent">Proposal Sent</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Language filter</label>
+                <select value={bLang} onChange={e => setBLang(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff' }}>
+                  <option value="">All languages</option>
+                  <option value="uz">Uzbek</option>
+                  <option value="ru">Russian</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Source filter</label>
+                <input value={bSource} onChange={e => setBSource(e.target.value)} placeholder="e.g. meta_ads" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Inactive (days)</label>
+                <input type="number" value={bInactiveDays} onChange={e => setBInactiveDays(e.target.value)} placeholder="e.g. 7" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Has tag</label>
+                <input value={bTag} onChange={e => setBTag(e.target.value)} placeholder="e.g. b2b" style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 4 }}>Schedule for (optional)</label>
+                <input type="datetime-local" value={bScheduled} onChange={e => setBScheduled(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #e2e8f0', borderRadius: 6, boxSizing: 'border-box' }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button className="btn" onClick={previewCount} disabled={countLoading}>
+                {countLoading ? '⏳ Counting...' : '👁 Preview Recipient Count'}
+              </button>
+              {recipientCount !== null && (
+                <span style={{ fontWeight: 700, fontSize: 15, color: recipientCount > 0 ? '#166534' : '#b91c1c' }}>
+                  {recipientCount === 0 ? '⚠️ No matching leads' : `✅ ${recipientCount} recipients`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className="btn" style={{ flex: 1 }} onClick={() => saveCampaign(false)} disabled={saving}>💾 Save as Draft</button>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => saveCampaign(true)} disabled={saving || recipientCount === 0}>
+              {bScheduled ? '📅 Schedule Campaign' : '🚀 Send Now'}
+            </button>
+          </div>
+        </div>
+      );
+
+      if (view === 'delivery' && selectedCampaign) return (
+        <div style={{ maxWidth: 700 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <button className="btn" onClick={() => setView('list')}>← Back</button>
+            <h2 style={{ margin: 0 }}>{selectedCampaign.name}</h2>
+            {statusBadge(selectedCampaign.status)}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
+            {[
+              { label: 'Sent', value: selectedCampaign.sent_count || 0, color: '#166534', bg: '#dcfce7' },
+              { label: 'Failed', value: selectedCampaign.failed_count || 0, color: '#b91c1c', bg: '#fee2e2' },
+              { label: 'Total', value: (selectedCampaign.sent_count || 0) + (selectedCampaign.failed_count || 0), color: '#1e40af', bg: '#dbeafe' },
+            ].map(s => (
+              <div key={s.label} className="card" style={{ textAlign: 'center', background: s.bg }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: 13, color: s.color, opacity: 0.8 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {delivLoading ? <div className="center-load"><div className="spinner" /></div> : (
+            <div className="card">
+              <h3 style={{ marginBottom: 12 }}>Delivery Log ({deliveries.length})</h3>
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, maxHeight: 400, overflowY: 'auto' }}>
+                {deliveries.length === 0 && <div style={{ padding: 16, color: '#64748b' }}>No deliveries recorded yet.</div>}
+                {deliveries.map(d => (
+                  <div key={d.id} style={{ display: 'flex', gap: 12, padding: '8px 12px', borderBottom: '1px solid #f1f5f9', alignItems: 'center', fontSize: 13 }}>
+                    <span style={{ fontFamily: 'monospace', color: '#64748b', minWidth: 80 }}>{d.telegram_id}</span>
+                    <span style={{ flex: 1 }}>{d.sent_at ? timeAgo(d.sent_at) : '—'}</span>
+                    {d.delivered === true && <span style={{ color: '#166534', fontWeight: 600 }}>✓ Delivered</span>}
+                    {d.delivered === false && <span style={{ color: '#b91c1c', fontWeight: 600 }} title={d.failed_reason}>✗ {d.failed_reason || 'Failed'}</span>}
+                    {d.delivered === null && <span style={{ color: '#64748b' }}>Pending</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+      // List view
+      return (
+        <div style={{ maxWidth: 700 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ margin: 0 }}>📣 Campaigns</h2>
+            <button className="btn btn-primary" onClick={() => setView('builder')}>+ New Campaign</button>
+          </div>
+          {campaigns.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📣</div>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>No campaigns yet</div>
+              <div style={{ fontSize: 13, marginBottom: 16 }}>Re-engage your leads with a targeted message blast.</div>
+              <button className="btn btn-primary" onClick={() => setView('builder')}>Create First Campaign</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {campaigns.map(c => (
+                <div key={c.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{c.name}</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>{timeAgo(c.created_at)} · by {c.created_by || '—'}</div>
+                    {c.scheduled_for && <div style={{ fontSize: 12, color: '#64748b' }}>Scheduled: {new Date(c.scheduled_for).toLocaleString()}</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                    {statusBadge(c.status)}
+                    {(c.sent_count > 0 || c.failed_count > 0) && (
+                      <span style={{ fontSize: 12, color: '#64748b' }}>✓{c.sent_count} ✗{c.failed_count}</span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => openDelivery(c)}>📊 Stats</button>
+                    {c.status === 'draft' && (
+                      <button className="btn" style={{ padding: '4px 10px', fontSize: 12, color: '#b91c1c' }} onClick={() => deleteCampaign(c.id)}>Delete</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
@@ -2758,6 +3070,7 @@
               <a className={tab === 'leads' ? 'active' : ''} onClick={() => setTab('leads')}>👥 Leads</a>
               <a className={tab === 'pipeline' ? 'active' : ''} onClick={() => setTab('pipeline')}>🎯 Pipeline</a>
               <a className={tab === 'analytics' ? 'active' : ''} onClick={() => setTab('analytics')}>📈 Analytics</a>
+              <a className={tab === 'campaigns' ? 'active' : ''} onClick={() => setTab('campaigns')}>📣 Campaigns</a>
               <a className={tab === 'sources' ? 'active' : ''} onClick={() => setTab('sources')}>📡 Sources ROI</a>
               <a className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}>⚙️ Settings</a>
             </div>
@@ -2784,6 +3097,7 @@
               {tab === 'leads' && <LeadsTable showToast={showToast} refreshKey={refreshKey} search={debouncedSearch} onOpenLead={setSelectedLead} />}
               {tab === 'pipeline' && <Kanban showToast={showToast} refreshKey={refreshKey} onOpenLead={setSelectedLead} />}
               {tab === 'analytics' && <AnalyticsDashboard showToast={showToast} />}
+              {tab === 'campaigns' && <CampaignsTab showToast={showToast} />}
               {tab === 'sources' && <Sources showToast={showToast} refreshKey={refreshKey} />}
               {tab === 'settings' && <Settings showToast={showToast} />}
             </div>

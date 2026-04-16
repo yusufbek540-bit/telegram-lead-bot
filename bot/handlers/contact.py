@@ -5,6 +5,9 @@ Contact handler — captures phone number when user shares contact.
 from aiogram import Router, F
 from aiogram.types import Message
 
+import logging
+logger = logging.getLogger(__name__)
+
 from bot.config import config
 from bot.texts import t
 from bot.services.db_service import db
@@ -30,6 +33,21 @@ async def handle_contact(message: Message):
         telegram_id=user.id,
         phone=contact.phone_number,
     )
+
+    # Duplicate detection: check if another lead already has this phone
+    try:
+        dup_res = db.client.table("leads").select("telegram_id").eq(
+            "phone", contact.phone_number
+        ).neq("telegram_id", user.id).execute()
+        if dup_res.data:
+            primary_tg_id = dup_res.data[0]["telegram_id"]
+            # Mark current lead as duplicate of the primary
+            db.client.table("leads").update({
+                "duplicate_of": primary_tg_id
+            }).eq("telegram_id", user.id).execute()
+            logger.info(f"Duplicate detected: {user.id} is a duplicate of {primary_tg_id}")
+    except Exception as dup_err:
+        logger.warning(f"Duplicate check failed: {dup_err}")
 
     # Track event
     await db.track_event(user.id, "phone_shared", {"phone": contact.phone_number})
