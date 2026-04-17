@@ -12,12 +12,12 @@ from bot.texts import t
 
 
 BUSINESS_TYPES = [
-    ("q_biz_restaurant", {"uz": "\U0001f37d Restoran / Kafe", "ru": "\U0001f37d Ресторан / Кафе"}),
-    ("q_biz_beauty", {"uz": "\U0001f487 Go'zallik / Klinika", "ru": "\U0001f487 Красота / Клиника"}),
-    ("q_biz_education", {"uz": "\U0001f4da Ta'lim / Kurslar", "ru": "\U0001f4da Образование / Курсы"}),
-    ("q_biz_it", {"uz": "\U0001f4bb IT / Startap", "ru": "\U0001f4bb IT / Стартап"}),
-    ("q_biz_ecommerce", {"uz": "\U0001f6d2 Onlayn do'kon", "ru": "\U0001f6d2 Онлайн-магазин"}),
-    ("q_biz_other", {"uz": "\U0001f4dd Boshqa", "ru": "\U0001f4dd Другое"}),
+    ("q_biz_restaurant", {"uz": "🍽 Restoran / Kafe", "ru": "🍽 Ресторан / Кафе"}),
+    ("q_biz_beauty", {"uz": "💇 Go'zallik / Klinika", "ru": "💇 Красота / Клиника"}),
+    ("q_biz_education", {"uz": "📚 Ta'lim / Kurslar", "ru": "📚 Образование / Курсы"}),
+    ("q_biz_it", {"uz": "💻 IT / Startap", "ru": "💻 IT / Стартап"}),
+    ("q_biz_ecommerce", {"uz": "🛒 Onlayn do'kon", "ru": "🛒 Онлайн-магазин"}),
+    ("q_biz_other", {"uz": "📝 Boshqa", "ru": "📝 Другое"}),
 ]
 
 SERVICES = [
@@ -43,10 +43,10 @@ MARKETING_STATUS = [
 ]
 
 BUDGETS = [
-    ("q_budget_200_500", {"uz": "\U0001f4b5 $200 — $500", "ru": "\U0001f4b5 $200 — $500"}),
-    ("q_budget_500_1000", {"uz": "\U0001f4b0 $500 — $1 000", "ru": "\U0001f4b0 $500 — $1 000"}),
-    ("q_budget_1000_3000", {"uz": "\U0001f3e6 $1 000 — $3 000", "ru": "\U0001f3e6 $1 000 — $3 000"}),
-    ("q_budget_3000", {"uz": "\U0001f48e $3 000+", "ru": "\U0001f48e $3 000+"}),
+    ("q_budget_200_500", {"uz": "💵 $200 — $500", "ru": "💵 $200 — $500"}),
+    ("q_budget_500_1000", {"uz": "💰 $500 — $1 000", "ru": "💰 $500 — $1 000"}),
+    ("q_budget_1000_3000", {"uz": "🏦 $1 000 — $3 000", "ru": "🏦 $1 000 — $3 000"}),
+    ("q_budget_3000", {"uz": "💎 $3 000+", "ru": "💎 $3 000+"}),
     ("q_budget_unknown", {"uz": "🤷 Hali aniq emas", "ru": "🤷 Ещё не определился"}),
 ]
 
@@ -103,7 +103,7 @@ def q4_keyboard(lang: str) -> InlineKeyboardMarkup:
 def q5_keyboard(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="\U0001f4f1 " + t("btn_share_phone", lang).replace("\U0001f4f1 ", ""), request_contact=True)],
+            [KeyboardButton(text="📱 " + t("btn_share_phone", lang).replace("📱 ", ""), request_contact=True)],
             [KeyboardButton(text="\u23ed " + t("q_skip_later", lang))],
         ],
         resize_keyboard=True,
