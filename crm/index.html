@@ -3572,7 +3572,10 @@
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
-            <h3 style={{ marginBottom: 12 }}>Bot Status / Scheduler Jobs</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h3 style={{ margin: 0 }}>Bot Status / Scheduler Jobs</h3>
+              <button className="btn" style={{ fontSize: 12, padding: '4px 10px' }} onClick={loadSettings}>↻ Refresh</button>
+            </div>
             {(() => {
               const heartbeat = jobStatus.find(j => j.job_id === 'heartbeat');
               const isOffline = !heartbeat || !heartbeat.last_run_at ||
