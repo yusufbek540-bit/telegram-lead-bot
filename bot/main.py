@@ -14,7 +14,7 @@ from aiogram.client.default import DefaultBotProperties
 from bot.config import config
 
 # Import all routers
-from bot.handlers import start, menu, contact, ai_chat, admin, twa, live_chat
+from bot.handlers import start, questionnaire, menu, contact, ai_chat, admin, twa, live_chat
 from bot.services.scheduler_service import create_scheduler
 
 
@@ -38,17 +38,19 @@ async def main():
     # Register routers IN ORDER (first match wins)
     # 1. Start command (highest priority)
     dp.include_router(start.router)
-    # 2. Admin commands
+    # 2. Questionnaire (q_ callbacks + "other" text input + phone skip)
+    dp.include_router(questionnaire.router)
+    # 3. Admin commands
     dp.include_router(admin.router)
-    # 3. Contact sharing
+    # 4. Contact sharing
     dp.include_router(contact.router)
-    # 4. TWA data
+    # 5. TWA data
     dp.include_router(twa.router)
-    # 5. Menu button callbacks
+    # 6. Menu button callbacks
     dp.include_router(menu.router)
-    # 6. Live chat — must be before ai_chat to intercept messages when active
+    # 7. Live chat — must be before ai_chat to intercept messages when active
     dp.include_router(live_chat.router)
-    # 7. AI chat (LAST — catches all remaining text messages)
+    # 8. AI chat (LAST — catches all remaining text messages)
     dp.include_router(ai_chat.router)
 
     # Set bot commands (visible in Telegram menu)
@@ -89,12 +91,21 @@ async def main():
     logger.info("Bot starting...")
     logger.info(f"Admin IDs: {config.ADMIN_IDS}")
 
-    # Start polling
-    try:
-        await dp.start_polling(bot)
-    finally:
-        scheduler.shutdown()
-        await bot.session.close()
+    logger.info("Bot starting. Polling with auto-restart on error.")
+
+    # Polling with auto-restart — if polling drops due to a network blip or
+    # unhandled exception, wait 5s and resume rather than dying silently.
+    while True:
+        try:
+            await dp.start_polling(bot, handle_signals=False)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Polling crashed: {e}. Restarting in 5s…", exc_info=True)
+            await asyncio.sleep(5)
+
+    scheduler.shutdown()
+    await bot.session.close()
 
 
 if __name__ == "__main__":

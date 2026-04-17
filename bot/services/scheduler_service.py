@@ -18,6 +18,7 @@ To inspect running jobs:
 
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -31,6 +32,7 @@ from bot.services.proposal_expiry import check_proposal_expiry
 from bot.services.tagger import run_auto_tagger
 from bot.services.sentiment import run_sentiment_analysis
 from bot.services.broadcaster import check_scheduled_campaigns
+from bot.services.chat_relay_service import run_chat_relay
 
 logger = logging.getLogger(__name__)
 
@@ -122,13 +124,45 @@ async def run_followups(bot: Bot):
             await send_to(bot, lead, "no_phone")
         elapsed = time.monotonic() - start
         logger.info(f"run_followups: done in {elapsed:.2f}s")
+        _record_job("run_followups")
     except Exception as e:
         logger.error(f"run_followups: failed — {e}", exc_info=True)
+        _record_job("run_followups", status="error", error=str(e)[:200])
+
+
+def _record_job(job_id: str, status: str = "ok", error: str = None):
+    """Write job last-run info to Supabase so the CRM can display it."""
+    try:
+        db.client.table("job_status").upsert({
+            "job_id": job_id,
+            "last_run_at": datetime.now(timezone.utc).isoformat(),
+            "last_status": status,
+            "last_error": error,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }, on_conflict="job_id").execute()
+    except Exception:
+        pass  # never crash the scheduler for a logging failure
 
 
 async def heartbeat():
     """Every 30 min: log a heartbeat to confirm the scheduler is alive."""
     logger.info("scheduler heartbeat")
+    # Also update each known job's entry so the CRM shows them even before first run
+    known_jobs = [
+        "run_followups", "check_followup_reminders", "detect_stale_leads",
+        "check_proposal_expiry", "run_auto_tagger", "run_sentiment_analysis",
+        "check_scheduled_campaigns", "run_chat_relay",
+    ]
+    for jid in known_jobs:
+        try:
+            res = db.client.table("job_status").select("job_id").eq("job_id", jid).execute()
+            if not res.data:
+                db.client.table("job_status").insert({
+                    "job_id": jid, "last_status": "pending", "run_count": 0,
+                }).execute()
+        except Exception:
+            pass
+    _record_job("heartbeat")
 
 
 # ── SCHEDULER SETUP ────────────────────────────────────────
@@ -206,6 +240,15 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
         minutes=1,
         args=[bot],
         id="check_scheduled_campaigns",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        run_chat_relay,
+        trigger="interval",
+        seconds=5,
+        args=[bot],
+        id="run_chat_relay",
         replace_existing=True,
     )
 

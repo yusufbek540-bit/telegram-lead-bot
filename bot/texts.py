@@ -247,6 +247,48 @@ TEXTS = {
             "{message}"
         ),
     },
+    # ── QUESTIONNAIRE ─────────────────────────────────────
+    "q_intro": {
+        "uz": "Sizga eng mos xizmatni taklif qilishimiz uchun bir necha savolga javob bering. 1 daqiqa vaqt oladi!",
+        "ru": "Ответьте на пару вопросов, чтобы мы подобрали лучшее решение. Займёт 1 минуту!",
+    },
+    "q1_text": {
+        "uz": "Qaysi sohada ishlaysiz?",
+        "ru": "В какой сфере вы работаете?",
+    },
+    "q1_other_text": {
+        "uz": "Qaysi sohada ishlaysiz? Qisqacha yozing.",
+        "ru": "В какой сфере работаете? Напишите кратко.",
+    },
+    "q2_text": {
+        "uz": "Sizga nima kerak? (1-2 ta tanlang, keyin \"Davom etish\" bosing)",
+        "ru": "Что вам нужно? (выберите 1-2, затем нажмите \"Далее\")",
+    },
+    "q3_text": {
+        "uz": "Hozirda marketing qilyapsizmi?",
+        "ru": "Вы сейчас ведёте маркетинг?",
+    },
+    "q4_text": {
+        "uz": "Oylik taxminiy byudjetingiz?",
+        "ru": "Ваш примерный бюджет в месяц?",
+    },
+    "q5_text": {
+        "uz": "Zo'r! Oxirgi qadam — jamoamiz siz bilan bog'lanishi uchun raqamingizni ulashing.",
+        "ru": "Отлично! Последний шаг — поделитесь номером, чтобы команда могла связаться.",
+    },
+    "q_complete": {
+        "uz": "Rahmat! Siz haqingizda bilib oldik.\n\nEndi savollaringizni yozing yoki menyudan tanlang",
+        "ru": "Спасибо! Мы узнали о вас больше.\n\nТеперь напишите вопрос или выберите из меню",
+    },
+    "q_skip_later": {
+        "uz": "Keyinroq",
+        "ru": "Позже",
+    },
+    "q_continue": {
+        "uz": "Davom etish",
+        "ru": "Далее",
+    },
+    "btn_q_skip": {"uz": "Keyinroq", "ru": "Позже"},
     # ── BUTTONS ────────────────────────────────────────────
     "btn_services": {"uz": "📋 Xizmatlar", "ru": "📋 Услуги"},
     "btn_portfolio": {"uz": "🖼 Portfolio", "ru": "🖼 Портфолио"},

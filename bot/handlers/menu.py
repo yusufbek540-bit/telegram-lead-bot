@@ -143,10 +143,19 @@ async def cb_set_lang(callback: CallbackQuery):
     lang = callback.data.split("_")[-1]
     await db.update_lead_lang(callback.from_user.id, lang)
     await db.track_event(callback.from_user.id, "lang_switch", {"lang": lang})
-    await safe_edit(
-        callback,
-        t("lang_switched", lang) + "\n\n" + t("welcome", lang, agency_name=config.AGENCY_NAME),
-        reply_markup=main_menu_keyboard(lang),
-        parse_mode="HTML",
-    )
+
+    lead = await db.get_lead(callback.from_user.id)
+    q_done = lead.get("questionnaire_completed") if lead else False
+
+    if not q_done:
+        await safe_edit(callback, t("lang_switched", lang), parse_mode="HTML")
+        from bot.handlers.questionnaire import start_questionnaire
+        await start_questionnaire(callback.message, lang, user_id=callback.from_user.id)
+    else:
+        await safe_edit(
+            callback,
+            t("lang_switched", lang) + "\n\n" + t("welcome", lang, agency_name=config.AGENCY_NAME),
+            reply_markup=main_menu_keyboard(lang),
+            parse_mode="HTML",
+        )
     await callback.answer()

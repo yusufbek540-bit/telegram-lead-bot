@@ -211,20 +211,24 @@ class DatabaseService:
         return result.data
 
     async def get_lead_count_by_source(self) -> list:
-        """Analytics: leads grouped by source."""
-        result = self.client.rpc("", {}).execute()  # Use the view instead
+        """Analytics: leads grouped by source (uses leads_by_source view)."""
         result = self.client.table("leads_by_source").select("*").execute()
         return result.data
 
     # ── CONVERSATIONS ──────────────────────────────────────────
 
-    async def save_message(self, telegram_id: int, role: str, message: str):
+    async def save_message(self, telegram_id: int, role: str, message: str, is_sent: bool = True):
         """Save a conversation message and update lead's last_activity_at."""
+        # Unread logic: if user sends message, mark as unread (is_read=False)
+        is_read = False if role == "user" else True
+        
         self.client.table("conversations").insert(
             {
                 "telegram_id": telegram_id,
                 "role": role,
                 "message": message,
+                "is_sent": is_sent,
+                "is_read": is_read,
             }
         ).execute()
         # Update last_activity_at on every user message for stale detection
@@ -232,6 +236,26 @@ class DatabaseService:
             self.client.table("leads").update(
                 {"last_activity_at": datetime.now(config.tz).isoformat()}
             ).eq("telegram_id", telegram_id).execute()
+
+    async def get_pending_assistant_messages(self) -> list:
+        """Fetch assistant messages that need to be delivered to users."""
+        result = (
+            self.client.table("conversations")
+            .select("*")
+            .eq("role", "assistant")
+            .eq("is_sent", False)
+            .order("created_at", desc=False)
+            .execute()
+        )
+        return result.data
+
+    async def mark_message_sent(self, msg_id: int):
+        """Mark a CRM message as successfully delivered."""
+        self.client.table("conversations").update({"is_sent": True}).eq("id", msg_id).execute()
+
+    async def mark_lead_read(self, telegram_id: int):
+        """Mark all messages from/to this lead as read."""
+        self.client.table("conversations").update({"is_read": True}).eq("telegram_id", telegram_id).execute()
 
     async def get_conversation(self, telegram_id: int, limit: int = 20) -> list:
         """Get recent conversation history for AI context."""
@@ -308,6 +332,35 @@ class DatabaseService:
         if "projects" in event_types:
             score += 10
         if "services" in event_types:
+            score += 5
+
+        # Questionnaire completion
+        if lead.get("questionnaire_completed"):
+            score += 15
+
+        # Budget signals
+        budget = lead.get("budget_range", "")
+        if budget == "3000":
+            score += 20
+        elif budget == "1000_3000":
+            score += 15
+        elif budget == "500_1000":
+            score += 10
+        elif budget == "200_500":
+            score += 5
+
+        # Service interest breadth
+        services = lead.get("service_interest") or []
+        if len(services) >= 3:
+            score += 10
+        elif len(services) >= 2:
+            score += 5
+
+        # Marketing status signals
+        marketing = lead.get("current_marketing", "")
+        if marketing == "has_wants_scale":
+            score += 10
+        elif marketing == "has_no_results":
             score += 5
 
         await self.update_lead(telegram_id, lead_score=score)

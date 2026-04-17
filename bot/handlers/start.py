@@ -69,13 +69,22 @@ async def cmd_start(message: Message, command: CommandObject):
             assigned = await route_new_lead(user.id, source_to_save or "organic")
             await notify_admins_new_lead(message, user, source, assigned)
     else:
-        # Returning user who already chose — go straight to menu
         lang = existing_lead["preferred_lang"]
-        await message.answer(
-            t("welcome", lang, agency_name=config.AGENCY_NAME),
-            reply_markup=main_menu_keyboard(lang),
-            parse_mode="HTML",
-        )
+        # Check if questionnaire incomplete — resume it
+        q_step = existing_lead.get("questionnaire_step") or 0
+        q_done = existing_lead.get("questionnaire_completed")
+        if not q_done and q_step > 0 and q_step < 6:
+            from bot.handlers.questionnaire import resume_questionnaire
+            await resume_questionnaire(message, lang, q_step)
+        elif not q_done:
+            from bot.handlers.questionnaire import start_questionnaire
+            await start_questionnaire(message, lang)
+        else:
+            await message.answer(
+                t("welcome", lang, agency_name=config.AGENCY_NAME),
+                reply_markup=main_menu_keyboard(lang),
+                parse_mode="HTML",
+            )
 
 
 @router.message(Command("contact"))

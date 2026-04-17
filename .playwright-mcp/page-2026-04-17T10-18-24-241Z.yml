@@ -1,0 +1,44 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: MQ.SD
+    - generic [ref=e6]:
+      - generic [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e13]: Dashboard
+      - generic [ref=e14] [cursor=pointer]:
+        - img [ref=e15]
+        - generic [ref=e20]: Leads
+      - generic [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+        - generic [ref=e23]: Pipeline
+      - generic [ref=e24] [cursor=pointer]:
+        - img [ref=e25]
+        - generic [ref=e30]: Clients
+      - generic [ref=e31] [cursor=pointer]:
+        - img [ref=e32]
+        - generic [ref=e34]: Metrics
+      - generic [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+        - generic [ref=e40]: Campaigns
+      - generic [ref=e41] [cursor=pointer]:
+        - img [ref=e42]
+        - generic [ref=e45]: Settings
+    - generic [ref=e46]: MQSD CRM v2
+  - generic [ref=e48]:
+    - textbox "Search leads by name, username, or phone..." [ref=e49]
+    - generic [ref=e50]:
+      - button "Ask AI" [ref=e51] [cursor=pointer]
+      - button "Refresh" [ref=e52] [cursor=pointer]
+      - button "Logout" [ref=e53] [cursor=pointer]
+  - generic [ref=e57]:
+    - generic [ref=e58]:
+      - generic [ref=e59]: Ask AI
+      - button "×" [ref=e60] [cursor=pointer]
+    - generic [ref=e61]:
+      - button "Топ 5 лидов по баллам" [ref=e62] [cursor=pointer]
+      - button "Лиды из meta без телефона" [ref=e63] [cursor=pointer]
+      - button "Сколько конвертировалось?" [ref=e64] [cursor=pointer]
+      - button "Статистика по статусам" [ref=e65] [cursor=pointer]
+    - generic [ref=e67]:
+      - textbox "Спросите о лидах..." [ref=e68]
+      - button "➤" [disabled] [ref=e69]

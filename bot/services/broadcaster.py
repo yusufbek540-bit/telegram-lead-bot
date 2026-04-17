@@ -12,11 +12,12 @@ Features:
 
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter
 
+from bot.config import config
 from bot.services.db_service import db
 
 logger = logging.getLogger(__name__)
@@ -167,27 +168,43 @@ async def send_campaign(campaign_id: int, bot: Bot) -> None:
 
 async def check_scheduled_campaigns(bot: Bot) -> None:
     """Scheduled job: fire any campaigns whose scheduled_for has passed."""
-    logger.info("check_scheduled_campaigns: scanning for due campaigns")
+    logger.debug("check_scheduled_campaigns: scanning for due campaigns")
     try:
-        # Get all scheduled campaigns - compare server-side via Supabase
-        now = datetime.now(config.tz).isoformat()
-        res = db.client.table("campaigns").select("id, scheduled_for").eq("status", "scheduled").execute()
+        now = datetime.now(config.tz)
+        res = db.client.table("campaigns").select("id, name, scheduled_for").eq("status", "scheduled").execute()
 
         due = []
         for row in (res.data or []):
             sf = row.get("scheduled_for")
             if not sf:
+                logger.warning(f"Campaign {row['id']} has no scheduled_for but status=scheduled, firing now")
                 due.append(row)
                 continue
-            # Parse scheduled_for and compare
-            try:
-                scheduled_dt = datetime.fromisoformat(sf.replace("Z", "+00:00"))
-                if scheduled_dt <= datetime.now(config.tz):
-                    due.append(row)
-            except Exception:
-                due.append(row)  # If parsing fails, fire it anyway
 
-        logger.info(f"check_scheduled_campaigns: found {len(due)} due campaign(s) out of {len(res.data or [])} scheduled")
+            try:
+                # Standardize: replace Z with UTC offset
+                sf_std = sf.replace("Z", "+00:00")
+                # If no offset present, assume Tashkent time
+                if "+" not in sf_std and sf_std.count("-") < 3: # exclude dates like 2024-04-16
+                     if sf_std.count(":") >= 1: # looks like it has time
+                         sf_std += "+05:00"
+
+                scheduled_dt = datetime.fromisoformat(sf_std)
+                if scheduled_dt.tzinfo is None:
+                    scheduled_dt = scheduled_dt.replace(tzinfo=config.tz)
+
+                if scheduled_dt <= now:
+                    due.append(row)
+                    logger.info(f"Campaign {row['id']} ('{row['name']}') is due: {scheduled_dt} <= {now}")
+                else:
+                    logger.debug(f"Campaign {row['id']} ('{row['name']}') not due yet: {scheduled_dt} > {now}")
+
+            except Exception as pe:
+                logger.error(f"Error parsing scheduled_for '{sf}' for campaign {row['id']}: {pe}")
+                due.append(row) # Better to send if we are unsure
+
+        if due:
+            logger.info(f"check_scheduled_campaigns: found {len(due)} due campaign(s) out of {len(res.data or [])} scheduled")
 
         for row in due:
             logger.info(f"Triggering scheduled campaign {row['id']}")

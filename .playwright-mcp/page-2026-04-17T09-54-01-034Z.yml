@@ -1,0 +1,5 @@
+- generic [ref=e4]:
+  - heading "MQSD CRM" [level=1] [ref=e5]
+  - generic [ref=e6]: Enter your password to continue
+  - textbox "Password" [active] [ref=e7]
+  - button "Sign In" [ref=e8] [cursor=pointer]

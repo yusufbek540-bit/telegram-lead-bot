@@ -1,0 +1,74 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: MQ.SD
+      - generic [ref=e6]:
+        - generic [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - generic [ref=e13]: Dashboard
+        - generic [ref=e14] [cursor=pointer]:
+          - img [ref=e15]
+          - generic [ref=e20]: Leads
+        - generic [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e23]: Pipeline
+        - generic [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e30]: Clients
+        - generic [ref=e31] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e34]: Metrics
+        - generic [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+          - generic [ref=e40]: Campaigns
+        - generic [ref=e41] [cursor=pointer]:
+          - img [ref=e42]
+          - generic [ref=e45]: Settings
+      - generic [ref=e46]: MQSD CRM v2
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - textbox "Search leads by name, username, or phone..." [ref=e49]
+        - generic [ref=e50]:
+          - button "Ask AI" [ref=e51] [cursor=pointer]
+          - button "Refresh" [ref=e52] [cursor=pointer]
+          - button "Logout" [ref=e53] [cursor=pointer]
+      - generic [ref=e305]:
+        - generic [ref=e306]:
+          - heading "Campaigns" [level=2] [ref=e307]
+          - button "+ New Campaign" [ref=e308] [cursor=pointer]
+        - generic [ref=e309]:
+          - generic [ref=e310]:
+            - generic [ref=e311]:
+              - generic [ref=e312]: eeeee
+              - generic [ref=e313]: 14h ago · by Yusuf
+              - generic [ref=e314]: "Scheduled: 17/04/2026, 00:37"
+            - generic [ref=e315]:
+              - generic [ref=e316]: sent
+              - generic [ref=e317]: ✓1 ✗0
+            - generic [ref=e318]:
+              - button "Stats" [ref=e319] [cursor=pointer]
+              - button "Delete" [ref=e320] [cursor=pointer]
+          - generic [ref=e321]:
+            - generic [ref=e322]:
+              - generic [ref=e323]: Test
+              - generic [ref=e324]: 16h ago · by Yusuf
+              - generic [ref=e325]: "Scheduled: 16/04/2026, 22:25"
+            - generic [ref=e326]:
+              - generic [ref=e327]: sent
+              - generic [ref=e328]: ✓1 ✗0
+            - generic [ref=e329]:
+              - button "Stats" [ref=e330] [cursor=pointer]
+              - button "Delete" [ref=e331] [cursor=pointer]
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]: Ask AI
+        - button "×" [ref=e60] [cursor=pointer]
+      - generic [ref=e61]:
+        - button "Топ 5 лидов по баллам" [ref=e62] [cursor=pointer]
+        - button "Лиды из meta без телефона" [ref=e63] [cursor=pointer]
+        - button "Сколько конвертировалось?" [ref=e64] [cursor=pointer]
+        - button "Статистика по статусам" [ref=e65] [cursor=pointer]
+      - generic [ref=e67]:
+        - textbox "Спросите о лидах..." [ref=e68]
+        - button "➤" [disabled] [ref=e69]
+  - generic [ref=e304]: "4"

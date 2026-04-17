@@ -66,6 +66,19 @@ async def handle_text_message(message: Message):
             parts.append(f"Phone: {lead['phone']} (already shared)")
         if lead.get("preferred_lang"):
             parts.append(f"Language: {lead['preferred_lang']}")
+        biz = lead.get("business_type")
+        if biz:
+            biz_str = lead.get("business_type_other") if biz == "other" else biz
+            parts.append(f"Business: {biz_str or 'other'}")
+        svc = lead.get("service_interest")
+        if svc:
+            parts.append(f"Interested in: {', '.join(svc)}")
+        mkt = lead.get("current_marketing")
+        if mkt:
+            parts.append(f"Current marketing: {mkt}")
+        budget = lead.get("budget_range")
+        if budget:
+            parts.append(f"Budget range: {budget}")
     user_info = ", ".join(parts) if parts else ""
 
     # Get AI response
