@@ -69,7 +69,7 @@ The section heading and "No events" empty state remain outside the scroll contai
 **CRM sidebar:**
 - The SVG content from `twa/logo.svg` is inlined directly into the sidebar logo area
 - Expanded mode: SVG constrained to `height: 28px; width: auto` with `overflow: visible`
-- Collapsed mode: show a small `32×32` red badge (`background: #bf1a1a; border-radius: 6px`) with a white "M" text label — the full SVG wordmark is too wide to clip usefully at 48px
+- Collapsed mode: show the same SVG at `height: 26px; width: auto` inside a `div` with `width: 36px; overflow: hidden` — the SVG renders at its natural proportional width (~80px) but is clipped at 36px, keeping the leftmost portion of the wordmark visible as a brand mark
 - The SVG paths are white on the transparent background, matching the dark `#002347` sidebar
 
 **TWA (`twa/index.html`):**
