@@ -674,10 +674,10 @@
     /* ── ACTIVITY ───────────────────────────────────────── */
     .activity-item {
       display: flex;
-      gap: 10px;
-      padding: 7px 0;
+      gap: 7px;
+      padding: 4px 0;
       border-bottom: 1px solid var(--border);
-      font-size: 13px;
+      font-size: 12px;
       align-items: center;
     }
 
@@ -2730,9 +2730,9 @@
               {events.map(e => (
                 <div key={e.id} className="activity-item">
                   <span className="icon">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </span>
-                  <span style={{ fontSize: 13 }}>{e.event_type.replace(/_/g, ' ')} {e.event_data ? <span style={{ color: '#94A3B8' }}>— {typeof e.event_data === 'object' ? JSON.stringify(e.event_data) : e.event_data}</span> : ''}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{e.event_type.replace(/_/g, ' ')}</span>
                   <span className="time">{timeAgo(e.created_at)}</span>
                 </div>
               ))}
