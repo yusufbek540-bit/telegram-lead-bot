@@ -1868,6 +1868,7 @@
       const save = async () => {
         setSaving(true);
         try {
+          const { data: existingRec } = await supabase.from('clients').select('id').eq('telegram_id', lead.telegram_id).maybeSingle();
           const insertData = {
             telegram_id: lead.telegram_id,
             client_type: type,
@@ -1879,8 +1880,8 @@
           if (estLtv) insertData.estimated_ltv = parseFloat(estLtv);
           const { error } = await supabase.from('clients').upsert(insertData, { onConflict: 'telegram_id', ignoreDuplicates: false });
           if (error) throw error;
-          
-          if (type === 'retainer' || type === 'one-time' || type === 'project') {
+
+          if (!existingRec && (type === 'retainer' || type === 'one-time' || type === 'project')) {
              // Let's create an initial 'new_retainer' or 'one_time_fee' revenue event to start the MRR / revenue collection immediately if they have an amount
              if (amount && Number(amount) > 0) {
                await supabase.from('revenue_events').insert({
@@ -2859,11 +2860,15 @@
         if (!lead) return;
         
         if (newStatus === 'converted') {
+          // Optimistically move the card immediately for instant feedback
+          setLeads(ls => ls.map(l => l.id === lead.id ? { ...l, status: newStatus } : l));
           // Check if client record already exists; if so, skip conversion modal
           const { data: existingClient } = await supabase.from('clients').select('id').eq('telegram_id', lead.telegram_id).maybeSingle();
           if (existingClient) {
             executeStatusChange(lead, oldStatus, newStatus);
           } else {
+            // Revert optimistic update — modal will handle the actual change
+            setLeads(ls => ls.map(l => l.id === lead.id ? { ...l, status: oldStatus } : l));
             setConversionLead({ lead, oldStatus, newStatus });
           }
           return;
