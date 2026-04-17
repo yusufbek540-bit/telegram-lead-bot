@@ -21,19 +21,25 @@ BUSINESS_TYPES = [
 ]
 
 SERVICES = [
-    ("q_svc_smm", {"uz": "\U0001f4f1 SMM boshqaruvi", "ru": "\U0001f4f1 Ведение SMM"}),
-    ("q_svc_targeting", {"uz": "\U0001f3af Targetlangan reklama", "ru": "\U0001f3af Таргетированная реклама"}),
-    ("q_svc_website", {"uz": "\U0001f310 Veb-sayt", "ru": "\U0001f310 Сайт"}),
-    ("q_svc_bot", {"uz": "\U0001f916 Telegram / Instagram bot", "ru": "\U0001f916 Telegram / Instagram бот"}),
-    ("q_svc_ai", {"uz": "\U0001f9e0 AI avtomatizatsiya", "ru": "\U0001f9e0 AI автоматизация"}),
-    ("q_svc_branding", {"uz": "\U0001f3a8 Brending", "ru": "\U0001f3a8 Брендинг"}),
-    ("q_svc_consulting", {"uz": "\U0001f4a1 Bilmayman, maslahat kerak", "ru": "\U0001f4a1 Не знаю, нужна консультация"}),
+    ("q_svc_smm", {"uz": "📱 SMM boshqaruvi", "ru": "📱 Ведение SMM"}),
+    ("q_svc_targeting", {"uz": "🎯 Targetlangan reklama", "ru": "🎯 Таргетированная реклама"}),
+    ("q_svc_website", {"uz": "🌐 Veb-sayt", "ru": "🌐 Сайт"}),
+    ("q_svc_bot", {"uz": "🤖 Telegram / Insta bot", "ru": "🤖 Telegram / Insta бот"}),
+    ("q_svc_ai", {"uz": "🧠 AI avtomatizatsiya", "ru": "🧠 AI автоматизация"}),
+    ("q_svc_branding", {"uz": "🎨 Brending", "ru": "🎨 Брендинг"}),
+    ("q_svc_consulting", {"uz": "💡 Maslahat kerak", "ru": "💡 Нужна консультация"}),
 ]
+SERVICES_PAIRED = [
+    ("q_svc_smm", "q_svc_targeting"),
+    ("q_svc_website", "q_svc_bot"),
+    ("q_svc_ai", "q_svc_branding"),
+]
+SERVICES_SOLO = ["q_svc_consulting"]
 
 MARKETING_STATUS = [
-    ("q_mkt_has_no_results", {"uz": "\U0001f610 Ha, lekin natija yo'q", "ru": "\U0001f610 Да, но нет результатов"}),
-    ("q_mkt_has_wants_scale", {"uz": "\U0001f4c8 Ha, yaxshi, kengaytirmoqchiman", "ru": "\U0001f4c8 Да, хорошо, хочу масштабировать"}),
-    ("q_mkt_none", {"uz": "\U0001f195 Yo'q, noldan boshlayman", "ru": "\U0001f195 Нет, начинаю с нуля"}),
+    ("q_mkt_has_no_results", {"uz": "😐 Ha, lekin natija yo'q", "ru": "😐 Да, но нет результатов"}),
+    ("q_mkt_has_wants_scale", {"uz": "📈 Ha, kengaytirmoqchiman", "ru": "📈 Да, хочу масштабировать"}),
+    ("q_mkt_none", {"uz": "🆕 Yo'q, noldan", "ru": "🆕 Нет, с нуля"}),
 ]
 
 BUDGETS = [
@@ -41,7 +47,7 @@ BUDGETS = [
     ("q_budget_500_1000", {"uz": "\U0001f4b0 $500 — $1 000", "ru": "\U0001f4b0 $500 — $1 000"}),
     ("q_budget_1000_3000", {"uz": "\U0001f3e6 $1 000 — $3 000", "ru": "\U0001f3e6 $1 000 — $3 000"}),
     ("q_budget_3000", {"uz": "\U0001f48e $3 000+", "ru": "\U0001f48e $3 000+"}),
-    ("q_budget_unknown", {"uz": "\U0001f937 Bilmayman / hali aniq emas", "ru": "\U0001f937 Не знаю / пока не определил"}),
+    ("q_budget_unknown", {"uz": "🤷 Hali aniq emas", "ru": "🤷 Ещё не определился"}),
 ]
 
 
@@ -57,14 +63,21 @@ def q1_keyboard(lang: str) -> InlineKeyboardMarkup:
 
 def q2_keyboard(lang: str, selected: list = None) -> InlineKeyboardMarkup:
     selected = selected or []
+    svc_map = {cb: labels for cb, labels in SERVICES}
     rows = []
-    for i in range(0, len(SERVICES), 2):
+    for pair in SERVICES_PAIRED:
         row = []
-        for cb, labels in SERVICES[i:i+2]:
+        for cb in pair:
+            labels = svc_map[cb]
             svc_key = cb.replace("q_svc_", "")
             prefix = "\u2705 " if svc_key in selected else ""
             row.append(InlineKeyboardButton(text=prefix + labels[lang], callback_data=cb))
         rows.append(row)
+    for cb in SERVICES_SOLO:
+        labels = svc_map[cb]
+        svc_key = cb.replace("q_svc_", "")
+        prefix = "\u2705 " if svc_key in selected else ""
+        rows.append([InlineKeyboardButton(text=prefix + labels[lang], callback_data=cb)])
     if selected:
         rows.append([InlineKeyboardButton(text=t("q_continue", lang) + " \u2192", callback_data="q_svc_done")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
