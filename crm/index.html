@@ -2090,11 +2090,13 @@
       const [history, setHistory] = useState([]);
       const [newComment, setNewComment] = useState('');
       const [tags, setTags] = useState([]);
+      const [revenueEvents, setRevenueEvents] = useState([]);
+      const [editingRevEvent, setEditingRevEvent] = useState(null);
 
       const loadDetails = useCallback(async () => {
         // Each query is independent — one missing table won't blank the entire panel
         const safe = async (promise) => { try { const r = await promise; return r.data || []; } catch { return []; } };
-        const [c, e, cm, h, pr, lt, cl] = await Promise.all([
+        const [c, e, cm, h, pr, lt, cl, rev] = await Promise.all([
           safe(supabase.from('conversations').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: true })),
           safe(supabase.from('events').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false })),
           safe(supabase.from('comments').select('*').eq('telegram_id', lead.telegram_id).order('is_pinned', { ascending: false }).order('created_at', { ascending: true })),
@@ -2102,6 +2104,7 @@
           safe(supabase.from('proposals').select('*').eq('telegram_id', lead.telegram_id).order('created_at', { ascending: false })),
           safe(supabase.from('lead_tags').select('tag, confidence, source').eq('telegram_id', lead.telegram_id)),
           safe(supabase.from('clients').select('*').eq('telegram_id', lead.telegram_id).limit(1)),
+          safe(supabase.from('revenue_events').select('*').eq('telegram_id', lead.telegram_id).order('event_date', { ascending: false })),
         ]);
         setConvo(c);
         setEvents(e);
@@ -2109,6 +2112,7 @@
         setHistory(h);
         setProposals(pr);
         setTags(lt);
+        setRevenueEvents(rev);
         if (cl.length > 0) {
           setClientData(cl[0]);
           setCType(cl[0].client_type || 'retainer');
@@ -2631,6 +2635,43 @@
                       <option value="UZS">UZS</option>
                     </select>
                   </div>
+                </div>
+              )}
+
+              {/* ── Revenue Events ── */}
+              {clientData && (
+                <div style={{ marginBottom: 16 }}>
+                  {editingRevEvent && (
+                    <LogEventModal
+                      client={clientData}
+                      event={editingRevEvent === 'new' ? null : editingRevEvent}
+                      showToast={showToast}
+                      onSuccess={() => { setEditingRevEvent(null); loadDetails(); }}
+                      onCancel={() => setEditingRevEvent(null)}
+                    />
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <label style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Revenue Events ({revenueEvents.length})</label>
+                    <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setEditingRevEvent('new')}>+ Log Event</button>
+                  </div>
+                  {revenueEvents.length === 0 ? (
+                    <div className="empty">No revenue events logged yet</div>
+                  ) : (
+                    <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>
+                      {revenueEvents.map(ev => (
+                        <div key={ev.id} className="activity-item" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600 }}>{ev.event_type.replace(/_/g, ' ')}</span>
+                            <span style={{ fontSize: 11, color: '#64748b' }}>{ev.event_date}{ev.notes ? ` · ${ev.notes}` : ''}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{ev.amount} {ev.currency}</span>
+                            <button className="btn" style={{ fontSize: 11, padding: '2px 8px' }} onClick={() => setEditingRevEvent(ev)}>Edit</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4562,37 +4603,41 @@
       );
     }
 
-    function LogEventModal({ client, onSuccess, onCancel, showToast }) {
-      const [type, setType] = useState('payment');
-      const [amount, setAmount] = useState(client.retainer_amount || '');
-      const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-      const [notes, setNotes] = useState('');
+    function LogEventModal({ client, event, onSuccess, onCancel, showToast }) {
+      const isEdit = !!event?.id;
+      const [type, setType] = useState(event?.event_type || 'payment');
+      const [amount, setAmount] = useState(event?.amount != null ? String(event.amount) : (client.retainer_amount || ''));
+      const [date, setDate] = useState(event?.event_date || new Date().toISOString().split('T')[0]);
+      const [notes, setNotes] = useState(event?.notes || '');
       const [saving, setSaving] = useState(false);
 
       const save = async () => {
         setSaving(true);
         try {
-          const { error } = await supabase.from('revenue_events').insert({
-            telegram_id: client.telegram_id,
+          const payload = {
             event_date: date,
             event_month: date.substring(0, 7),
             amount: parseFloat(amount) || 0,
             currency: client.currency || 'USD',
             event_type: type,
             notes: notes
-          });
+          };
+          let error;
+          if (isEdit) {
+            ({ error } = await supabase.from('revenue_events').update(payload).eq('id', event.id));
+          } else {
+            ({ error } = await supabase.from('revenue_events').insert({ ...payload, telegram_id: client.telegram_id }));
+          }
           if (error) throw error;
-          
+
           if (type === 'cancellation') {
              await supabase.from('clients').update({ retainer_status: 'cancelled', retainer_end_date: date, churn_reason: notes }).eq('telegram_id', client.telegram_id);
-          } else if (type === 'upgrade' || type === 'downgrade') {
-             // Let the user manually adjust the active amount later if needed
           }
-          
-          showToast('Event logged successfully', 'success');
+
+          showToast(isEdit ? 'Event updated' : 'Event logged successfully', 'success');
           onSuccess();
         } catch (err) {
-          showToast('Error logging event: ' + err.message, 'error');
+          showToast('Error: ' + err.message, 'error');
         } finally {
           setSaving(false);
         }
@@ -4602,7 +4647,7 @@
         <div className="panel-overlay" style={{ zIndex: 9999 }}>
           <div className="panel" style={{ width: 450, margin: '10vh auto', height: 'max-content', padding: 0 }}>
             <div className="panel-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-              <h2 style={{ fontSize: 18, margin: 0 }}>Log Revenue Event</h2>
+              <h2 style={{ fontSize: 18, margin: 0 }}>{isEdit ? 'Edit Revenue Event' : 'Log Revenue Event'}</h2>
               <button className="btn" onClick={onCancel} style={{ border: 'none', background: 'none', fontSize: 18 }}>✕</button>
             </div>
             <div className="panel-section" style={{ padding: 24, border: 'none' }}>
@@ -4636,7 +4681,7 @@
               <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
                 <button className="btn" style={{ flex: 1, padding: '10px 0', fontSize: 14 }} onClick={onCancel}>Cancel</button>
                 <button className="btn btn-primary" style={{ flex: 1, padding: '10px 0', fontSize: 14 }} disabled={saving} onClick={save}>
-                  {saving ? 'Saving...' : 'Save Event'}
+                  {saving ? 'Saving...' : (isEdit ? 'Update Event' : 'Save Event')}
                 </button>
               </div>
             </div>
@@ -4645,7 +4690,7 @@
       );
     }
 
-    function ClientsTab({ showToast, onOpenLead }) {
+    function ClientsTab({ showToast, onOpenLead, refreshKey }) {
       const [metrics, setMetrics] = useState(null);
       const [history, setHistory] = useState([]);
       const [clients, setClients] = useState([]);
@@ -4661,7 +4706,7 @@
           const { data: clientsData, error } = await supabase.from('clients')
             .select(`
               *,
-              leads (first_name, last_name, username)
+              leads (id, first_name, last_name, username, telegram_id)
             `)
             .order('created_at', { ascending: false });
           
@@ -4682,7 +4727,7 @@
         }
       }, [showToast]);
 
-      useEffect(() => { load(); }, [load]);
+      useEffect(() => { load(); }, [load, refreshKey]);
 
       if (loading) return <div className="center-load"><div className="spinner" /></div>;
 
@@ -4822,7 +4867,7 @@
                   return (
                     <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '12px 16px', fontWeight: 500 }}>
-                        <a href="#" style={{ color: '#2563eb', textDecoration: 'none' }} onClick={(e) => { e.preventDefault(); c.leads && onOpenLead({...leadObj, id: c.telegram_id}); }}>{leadName}</a>
+                        <a href="#" style={{ color: '#2563eb', textDecoration: 'none' }} onClick={(e) => { e.preventDefault(); leadObj && onOpenLead({ ...leadObj, telegram_id: leadObj.telegram_id || c.telegram_id }); }}>{leadName}</a>
                       </td>
                       <td style={{ padding: '12px 16px', textTransform: 'capitalize' }}>{c.client_type}</td>
                       <td style={{ padding: '12px 16px' }}>
@@ -4975,7 +5020,7 @@
               {tab === 'dashboard' && <Dashboard showToast={showToast} refreshKey={refreshKey} />}
               {tab === 'leads' && <LeadsTable showToast={showToast} refreshKey={refreshKey} search={debouncedSearch} onOpenLead={setSelectedLead} />}
               {tab === 'pipeline' && <Kanban showToast={showToast} refreshKey={refreshKey} onOpenLead={setSelectedLead} />}
-              {tab === 'clients' && <ClientsTab showToast={showToast} onOpenLead={setSelectedLead} />}
+              {tab === 'clients' && <ClientsTab showToast={showToast} onOpenLead={setSelectedLead} refreshKey={refreshKey} />}
               {tab === 'metrics' && <MetricsDashboard showToast={showToast} />}
               {tab === 'campaigns' && <CampaignsTab showToast={showToast} />}
               {tab === 'settings' && <Settings showToast={showToast} />}
