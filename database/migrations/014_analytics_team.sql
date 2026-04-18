@@ -1,5 +1,7 @@
 -- Migration 014: Analytics views + Tasks table
 -- Run in Supabase SQL Editor
+-- Requires: crm_extension.sql (defines status_history) to have been run first
+-- Safe to re-run: YES (idempotent)
 
 -- ── 1. TASKS TABLE ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tasks (
@@ -18,11 +20,33 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_tasks_status   ON tasks(status);
 
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon can read tasks"   ON tasks FOR SELECT USING (true);
-CREATE POLICY "anon can insert tasks" ON tasks FOR INSERT WITH CHECK (true);
-CREATE POLICY "anon can update tasks" ON tasks FOR UPDATE USING (true);
-CREATE POLICY "anon can delete tasks" ON tasks FOR DELETE USING (true);
+DO $$
+BEGIN
+  ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+  DROP POLICY IF EXISTS "anon can read tasks"   ON tasks;
+  CREATE POLICY "anon can read tasks"   ON tasks FOR SELECT USING (true);
+
+  DROP POLICY IF EXISTS "anon can insert tasks" ON tasks;
+  CREATE POLICY "anon can insert tasks" ON tasks FOR INSERT WITH CHECK (true);
+
+  DROP POLICY IF EXISTS "anon can update tasks" ON tasks;
+  CREATE POLICY "anon can update tasks" ON tasks FOR UPDATE USING (true);
+
+  DROP POLICY IF EXISTS "anon can delete tasks" ON tasks;
+  CREATE POLICY "anon can delete tasks" ON tasks FOR DELETE USING (true);
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'tasks_updated_at'
+  ) THEN
+    CREATE TRIGGER tasks_updated_at
+      BEFORE UPDATE ON tasks
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+  END IF;
+END $$;
 
 -- ── 2. v_deal_cycle VIEW ────────────────────────────────────────
 -- Avg days from lead creation to first conversion, grouped by month
@@ -63,8 +87,11 @@ SELECT
 CREATE OR REPLACE VIEW v_team_metrics AS
 WITH week_bounds AS (
   SELECT
-    DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent')::timestamptz AS week_start,
-    (DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent') + INTERVAL '6 days 23:59:59')::timestamptz AS week_end
+    (DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent')
+      AT TIME ZONE 'Asia/Tashkent')::timestamptz AS week_start,
+    (DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent')
+      + INTERVAL '6 days 23:59:59'
+      AT TIME ZONE 'Asia/Tashkent')::timestamptz AS week_end
 ),
 advances AS (
   SELECT changed_by AS member, COUNT(*) AS deals_advanced
