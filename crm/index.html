@@ -4204,6 +4204,31 @@
           { label: 'ROI', value: roi !== null ? `${roi}%` : '\u2014', sub: roi !== null ? (parseFloat(roi) > 0 ? 'profitable' : 'negative') : null, trend: null, help: 'Net profit / total spend \u00d7 100. Accounts for gross margin and operating costs if set.' },
           { label: 'CTR', value: totalImpressions > 0 && totalClicks > 0 ? `${(totalClicks/totalImpressions*100).toFixed(2)}%` : '\u2014', sub: totalClicks > 0 ? `${totalClicks.toLocaleString()} clicks` : null, trend: null, help: 'Clicks / impressions \u00d7 100.' },
         ]},
+        { title: 'Client Retention', icon: '\uD83D\uDD01', color: '#7C3AED', items: [
+          {
+            label: 'Avg Deal Cycle',
+            value: dealCycle ? `${dealCycle.avg_days}d` : '\u2014',
+            sub: dealCycle ? `${dealCycle.deal_count} deals` : 'no conversions yet',
+            trend: null,
+            help: 'Average days from lead created to first conversion this month.',
+          },
+          {
+            label: 'Repeat Clients',
+            value: repeatClients && repeatClients.total_converted > 0
+              ? `${((repeatClients.repurchase_count / repeatClients.total_converted) * 100).toFixed(1)}%`
+              : '\u2014',
+            sub: repeatClients ? `${repeatClients.repurchase_count} re-purchases` : null,
+            trend: null,
+            help: 'Clients with 2+ revenue events as a % of all converted leads.',
+          },
+          {
+            label: 'Re-engaged Leads',
+            value: repeatClients ? String(repeatClients.reengaged_count) : '\u2014',
+            sub: 'converted 2+ times',
+            trend: null,
+            help: 'Leads who were converted, lost, then converted again.',
+          },
+        ]},
       ];
 
       // ── Heatmap ──────────────────────────────────────
