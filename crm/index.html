@@ -3993,7 +3993,7 @@
             supabase.from('revenue_events').select('telegram_id, amount, event_type').gte('event_date', dateFrom).lte('event_date', dateTo),
             supabase.from('revenue_events').select('amount, event_type').gte('event_date', prevRange.from).lte('event_date', prevRange.to),
             supabase.from('v_deal_cycle').select('*'),
-            supabase.from('v_repeat_clients').select('*').single(),
+            supabase.from('v_repeat_clients').select('*').maybeSingle(),
           ]);
           setLeads(lRes.data || []);
           setPrevLeads(plRes.data || []);
