@@ -165,6 +165,71 @@ async def heartbeat():
     _record_job("heartbeat")
 
 
+# ── JOB WRAPPERS ───────────────────────────────────────────
+
+async def _wrap_check_followup_reminders(bot: Bot):
+    try:
+        await check_followup_reminders(bot)
+        _record_job("check_followup_reminders")
+    except Exception as e:
+        logger.error(f"check_followup_reminders: {e}", exc_info=True)
+        _record_job("check_followup_reminders", status="error", error=str(e)[:200])
+
+
+async def _wrap_detect_stale_leads(bot: Bot):
+    try:
+        await detect_stale_leads(bot)
+        _record_job("detect_stale_leads")
+    except Exception as e:
+        logger.error(f"detect_stale_leads: {e}", exc_info=True)
+        _record_job("detect_stale_leads", status="error", error=str(e)[:200])
+
+
+async def _wrap_check_proposal_expiry(bot: Bot):
+    try:
+        await check_proposal_expiry(bot)
+        _record_job("check_proposal_expiry")
+    except Exception as e:
+        logger.error(f"check_proposal_expiry: {e}", exc_info=True)
+        _record_job("check_proposal_expiry", status="error", error=str(e)[:200])
+
+
+async def _wrap_run_auto_tagger(bot: Bot):
+    try:
+        await run_auto_tagger(bot)
+        _record_job("run_auto_tagger")
+    except Exception as e:
+        logger.error(f"run_auto_tagger: {e}", exc_info=True)
+        _record_job("run_auto_tagger", status="error", error=str(e)[:200])
+
+
+async def _wrap_run_sentiment_analysis(bot: Bot):
+    try:
+        await run_sentiment_analysis(bot)
+        _record_job("run_sentiment_analysis")
+    except Exception as e:
+        logger.error(f"run_sentiment_analysis: {e}", exc_info=True)
+        _record_job("run_sentiment_analysis", status="error", error=str(e)[:200])
+
+
+async def _wrap_check_scheduled_campaigns(bot: Bot):
+    try:
+        await check_scheduled_campaigns(bot)
+        _record_job("check_scheduled_campaigns")
+    except Exception as e:
+        logger.error(f"check_scheduled_campaigns: {e}", exc_info=True)
+        _record_job("check_scheduled_campaigns", status="error", error=str(e)[:200])
+
+
+async def _wrap_run_chat_relay(bot: Bot):
+    try:
+        await run_chat_relay(bot)
+        _record_job("run_chat_relay")
+    except Exception as e:
+        logger.error(f"run_chat_relay: {e}", exc_info=True)
+        _record_job("run_chat_relay", status="error", error=str(e)[:200])
+
+
 # ── SCHEDULER SETUP ────────────────────────────────────────
 
 def create_scheduler(bot: Bot) -> AsyncIOScheduler:
@@ -189,7 +254,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        check_followup_reminders,
+        _wrap_check_followup_reminders,
         trigger="interval",
         hours=config.JOB_INTERVALS["followup_check_hours"],
         args=[bot],
@@ -198,7 +263,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        detect_stale_leads,
+        _wrap_detect_stale_leads,
         trigger="cron",
         hour=config.JOB_INTERVALS["stale_detection_hour"],
         minute=0,
@@ -208,7 +273,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        check_proposal_expiry,
+        _wrap_check_proposal_expiry,
         trigger="interval",
         hours=config.JOB_INTERVALS["proposal_expiry_hours"],
         args=[bot],
@@ -217,7 +282,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        run_auto_tagger,
+        _wrap_run_auto_tagger,
         trigger="interval",
         hours=config.JOB_INTERVALS.get("tagging_interval_hours", 1),
         args=[bot],
@@ -226,7 +291,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        run_sentiment_analysis,
+        _wrap_run_sentiment_analysis,
         trigger="interval",
         hours=config.JOB_INTERVALS.get("sentiment_interval_hours", 2),
         args=[bot],
@@ -235,7 +300,7 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        check_scheduled_campaigns,
+        _wrap_check_scheduled_campaigns,
         trigger="interval",
         minutes=1,
         args=[bot],
@@ -244,9 +309,9 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.add_job(
-        run_chat_relay,
+        _wrap_run_chat_relay,
         trigger="interval",
-        seconds=5,
+        seconds=30,
         args=[bot],
         id="run_chat_relay",
         replace_existing=True,
