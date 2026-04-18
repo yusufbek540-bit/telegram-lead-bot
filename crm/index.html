@@ -3933,17 +3933,27 @@
       const [showSettings, setShowSettings] = useState(false);
       const [grossMargin, setGrossMargin] = useState(() => { const v = localStorage.getItem('crm_gross_margin'); return v !== null ? v : ''; });
       const [opCosts, setOpCosts] = useState(() => { const v = localStorage.getItem('crm_op_costs'); return v !== null ? v : ''; });
+      const [cmpMode, setCmpMode] = useState('prev');
+      const [dealCycle, setDealCycle] = useState(null);
+      const [repeatClients, setRepeatClients] = useState(null);
+      const [aiAnalysis, setAiAnalysis] = useState(null);
+      const [aiLoading, setAiLoading] = useState(false);
 
       const adPeriod = useMemo(() => dateFrom.slice(0, 7), [dateFrom]);
 
       const prevRange = useMemo(() => {
         const from = new Date(dateFrom);
         const to = new Date(dateTo);
+        if (cmpMode === 'yoy') {
+          const yoyFrom = new Date(from); yoyFrom.setFullYear(yoyFrom.getFullYear() - 1);
+          const yoyTo = new Date(to); yoyTo.setFullYear(yoyTo.getFullYear() - 1);
+          return { from: yoyFrom.toISOString().split('T')[0], to: yoyTo.toISOString().split('T')[0] };
+        }
         const span = to - from;
         const prevTo = new Date(from.getTime() - 86400000);
         const prevFrom = new Date(prevTo.getTime() - span);
         return { from: prevFrom.toISOString().split('T')[0], to: prevTo.toISOString().split('T')[0] };
-      }, [dateFrom, dateTo]);
+      }, [dateFrom, dateTo, cmpMode]);
 
       const setPreset = (key) => {
         const t = new Date();
@@ -3969,7 +3979,7 @@
           const prevStart = `${prevRange.from}T00:00:00`;
           const prevEnd = `${prevRange.to}T23:59:59`;
 
-          const [lRes, plRes, cRes, eRes, aRes, mcRes, mRes, evRes, shRes, clRes, revRes, prevRevRes] = await Promise.all([
+          const [lRes, plRes, cRes, eRes, aRes, mcRes, mRes, evRes, shRes, clRes, revRes, prevRevRes, dcRes, rcRes] = await Promise.all([
             supabase.from('leads').select('telegram_id, source, status, phone, deal_value, deal_currency, created_at, first_contact_at, assigned_to, rejection_reason').gte('created_at', periodStart).lte('created_at', periodEnd),
             supabase.from('leads').select('telegram_id, status, phone, deal_value, created_at').gte('created_at', prevStart).lte('created_at', prevEnd),
             supabase.from('conversations').select('telegram_id').eq('role', 'user'),
@@ -3982,6 +3992,8 @@
             supabase.from('clients').select('estimated_ltv'),
             supabase.from('revenue_events').select('telegram_id, amount, event_type').gte('event_date', dateFrom).lte('event_date', dateTo),
             supabase.from('revenue_events').select('amount, event_type').gte('event_date', prevRange.from).lte('event_date', prevRange.to),
+            supabase.from('v_deal_cycle').select('*'),
+            supabase.from('v_repeat_clients').select('*').single(),
           ]);
           setLeads(lRes.data || []);
           setPrevLeads(plRes.data || []);
@@ -3997,6 +4009,9 @@
           setMetricsClients(clRes.data || []);
           setRevEvents(revRes.data || []);
           setPrevRevEvents(prevRevRes.data || []);
+          const dcRow = (dcRes.data || []).find(r => r.month === adPeriod);
+          setDealCycle(dcRow || null);
+          setRepeatClients(rcRes.data || null);
           const starts = evRes.data || [];
           const phones = (lRes.data || []).filter(l => l.phone).map(l => ({ created_at: l.created_at }));
           const conversions = shRes.data || [];
