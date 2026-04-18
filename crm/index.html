@@ -4336,6 +4336,20 @@
               <span style={{ color: 'var(--text-3)', fontSize: 12 }}>\u2014</span>
               <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
                 style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 12.5, fontFamily: 'inherit', outline: 'none', background: 'var(--bg)' }} />
+              <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                {[['vs prev', 'prev'], ['vs last year', 'yoy']].map(([lbl, mode]) => (
+                  <button key={mode} onClick={() => setCmpMode(mode)}
+                    style={{
+                      padding: '4px 10px', fontSize: 11.5, fontWeight: 600,
+                      borderRadius: 'var(--r)', cursor: 'pointer',
+                      background: cmpMode === mode ? 'var(--primary)' : 'var(--surface)',
+                      color: cmpMode === mode ? '#fff' : 'var(--text-2)',
+                      border: `1px solid ${cmpMode === mode ? 'var(--primary)' : 'var(--border)'}`,
+                    }}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
