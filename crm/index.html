@@ -17,21 +17,21 @@
   <style>
     /* ── DESIGN TOKENS ──────────────────────────────────── */
     :root {
-      --bg:          #F7F8FA;
+      --bg:          #f6f4f0;
       --surface:     #FFFFFF;
       --surface-alt: #F1F3F7;
-      --sidebar-bg:  #0F172A;
-      --sidebar-hi:  #1E293B;
+      --sidebar-bg:  #002347;
+      --sidebar-hi:  #0a3a6e;
       --sidebar-txt: #94A3B8;
       --sidebar-act: #F8FAFC;
-      --text:        #0F172A;
+      --text:        #002347;
       --text-2:      #475569;
       --text-3:      #94A3B8;
       --border:      #E2E8F0;
       --border-hi:   #CBD5E1;
-      --primary:     #4F46E5;
-      --primary-hi:  #4338CA;
-      --primary-s:   rgba(79, 70, 229, 0.08);
+      --primary:     #bf1a1a;
+      --primary-hi:  #991515;
+      --primary-s:   rgba(191, 26, 26, 0.08);
       --success:     #16A34A;
       --warning:     #CA8A04;
       --danger:      #DC2626;
@@ -664,7 +664,7 @@
       align-self: flex-end;
       background: var(--primary-s);
       color: var(--primary-hi);
-      border: 1px solid rgba(79,70,229,0.12);
+      border: 1px solid rgba(191,26,26,0.12);
       border-bottom-right-radius: 4px;
     }
 
@@ -1073,7 +1073,7 @@
     .ai-example-chip {
       background: var(--primary-s);
       color: var(--primary);
-      border: 1px solid rgba(79,70,229,0.15);
+      border: 1px solid rgba(191,26,26,0.15);
       border-radius: 100px;
       padding: 4px 10px;
       font-size: 11.5px;
@@ -1083,7 +1083,7 @@
       transition: background 0.1s;
     }
 
-    .ai-example-chip:hover { background: rgba(79,70,229,0.14); }
+    .ai-example-chip:hover { background: rgba(191,26,26,0.14); }
 
     /* ── RESPONSIVE ─────────────────────────────────────── */
     @media (max-width: 1024px) {
@@ -1546,7 +1546,7 @@
                 )}
                 {priorities.todayFollowups.length > 0 && (
                   <div style={{ minWidth: 160 }}>
-                    <div style={{ fontWeight: 600, color: '#4F46E5', marginBottom: 7, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Today ({priorities.todayFollowups.length})</div>
+                    <div style={{ fontWeight: 600, color: '#bf1a1a', marginBottom: 7, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Today ({priorities.todayFollowups.length})</div>
                     {priorities.todayFollowups.slice(0, 5).map(r => (
                       <div key={r.id} style={{ fontSize: 13, color: '#475569', padding: '2px 0' }}>
                         {r.leadName} — {r.note || '—'}
@@ -1558,7 +1558,7 @@
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-            <div className="stat-card" style={{ borderLeft: '3px solid #4F46E5' }}>
+            <div className="stat-card" style={{ borderLeft: '3px solid #bf1a1a' }}>
               <div className="label">Total Leads</div>
               <div className="value">{stats.total}</div>
             </div>
@@ -2537,7 +2537,7 @@
                       )}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748b' }}>Est. LTV</span>
-                        <span style={{ fontWeight: 600, color: '#4F46E5' }}>
+                        <span style={{ fontWeight: 600, color: '#bf1a1a' }}>
                           {clientData.estimated_ltv > 0 ? `$${Number(clientData.estimated_ltv).toLocaleString()}` : '—'}
                         </span>
                       </div>
@@ -4055,7 +4055,7 @@
 
       const pct = (n, d) => d ? (n / d * 100).toFixed(0) : '0';
       const funnel = [
-        { label: '/start', count: total, color: '#4F46E5' },
+        { label: '/start', count: total, color: '#bf1a1a' },
         { label: 'Engaged', count: engaged, color: '#7C3AED', drop: pct(total - engaged, total) },
         { label: 'Phone', count: withPhone, color: '#2563EB', drop: pct(engaged - withPhone, engaged) },
         { label: 'Qualified', count: qualified, color: '#0891B2', drop: pct(withPhone - qualified, withPhone) },
@@ -4122,7 +4122,7 @@
       const prevLost = prevLeads.filter(l => l.status === 'lost');
 
       const kpiSections = [
-        { title: 'Lead Acquisition', icon: '\uD83D\uDCE5', color: '#4F46E5', items: [
+        { title: 'Lead Acquisition', icon: '\uD83D\uDCE5', color: '#bf1a1a', items: [
           { label: 'Total Leads', value: total, sub: null, trend: trendFn(total, prevTotal), help: 'Total unique users who started the bot in this period.' },
           { label: 'Lead Velocity', value: lvr !== null ? `${lvr}%` : '\u2014', sub: lvr !== null ? 'vs prev. period' : 'need prior data', trend: null, help: 'Period-over-period growth in new leads.' },
           { label: 'Phone Rate', value: `${phoneRate}%`, sub: `${withPhone} leads`, trend: null, help: 'Percentage of leads who shared their phone number.' },
