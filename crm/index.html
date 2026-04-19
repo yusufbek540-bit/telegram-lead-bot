@@ -4061,7 +4061,9 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
+          if (data.error) throw new Error(data.error);
           const parsed = JSON.parse(data.choices[0].message.content);
           setAiAnalysis(parsed);
         } catch {
