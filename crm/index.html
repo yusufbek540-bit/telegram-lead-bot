@@ -5056,9 +5056,9 @@
             supabase.from('team_members').select('*').order('name'),
             supabase.from('v_team_metrics').select('*'),
             supabase.from('leads').select('telegram_id, name, username, assigned_to, status, last_activity_at, created_at')
-              .lt('last_activity_at', threeDaysAgo)
+              .or(`last_activity_at.lt.${threeDaysAgo},last_activity_at.is.null`)
               .not('status', 'in', '(converted,lost)')
-              .order('last_activity_at', { ascending: true }),
+              .order('last_activity_at', { ascending: true, nullsFirst: true }),
             supabase.from('tasks').select('*, leads(name)').order('due_date', { ascending: true }),
           ]);
           setTeamMembers(tmRes.data || []);
@@ -5214,14 +5214,24 @@
       };
 
       const markDone = async (id) => {
-        await supabase.from('tasks').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', id);
-        reload();
+        try {
+          const { error } = await supabase.from('tasks').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', id);
+          if (error) throw error;
+          reload();
+        } catch (e) {
+          showToast('Error: ' + e.message, 'error');
+        }
       };
 
       const deleteTask = async (id) => {
         if (!confirm('Delete this task?')) return;
-        await supabase.from('tasks').delete().eq('id', id);
-        reload();
+        try {
+          const { error } = await supabase.from('tasks').delete().eq('id', id);
+          if (error) throw error;
+          reload();
+        } catch (e) {
+          showToast('Error: ' + e.message, 'error');
+        }
       };
 
       const getTaskStatus = (t) => {
