@@ -3260,7 +3260,7 @@
       if (loading) return <div className="center-load"><div className="spinner" /></div>;
 
       if (view === 'builder') return (
-        <div style={{ maxWidth: 700 }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <button className="btn" onClick={() => setView('list')}>← Back</button>
             <h2 style={{ margin: 0 }}>New Campaign</h2>
@@ -3339,7 +3339,7 @@
       );
 
       if (view === 'delivery' && selectedCampaign) return (
-        <div style={{ maxWidth: 700 }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <button className="btn" onClick={() => setView('list')}>← Back</button>
             <h2 style={{ margin: 0 }}>{selectedCampaign.name}</h2>
@@ -3379,7 +3379,7 @@
 
       // List view
       return (
-        <div style={{ maxWidth: 700 }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px' }}>Campaigns</h2>
             <button className="btn btn-primary" onClick={() => setView('builder')}>+ New Campaign</button>
@@ -3575,7 +3575,7 @@
       const maskedUrl = CONFIG.SUPABASE_URL.slice(0, 20) + '...';
 
       return (
-        <div style={{ maxWidth: 600 }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div className="card" style={{ marginBottom: 16 }}>
             <h3 style={{ marginBottom: 4 }}>Your Name</h3>
             <p style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>Shown in comments, status changes, and notifications.</p>
@@ -4375,14 +4375,14 @@
       };
 
       return (
-        <div style={{ maxWidth: 1100 }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           {/* Settings Modal */}
           {showSettings && (
             <div className="panel-overlay" style={{ zIndex: 9999 }}>
               <div className="panel" style={{ width: 420, margin: '12vh auto', height: 'max-content', padding: 0 }}>
                 <div className="panel-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
                   <h2 style={{ fontSize: 18, margin: 0 }}>Business Settings</h2>
-                  <button className="btn" onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', fontSize: 18 }}>\u2715</button>
+                  <button className="btn" onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', fontSize: 18 }}>✕</button>
                 </div>
                 <div style={{ padding: 24 }}>
                   <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
@@ -4429,7 +4429,7 @@
               ))}
               <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
                 style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 12.5, fontFamily: 'inherit', outline: 'none', background: 'var(--bg)' }} />
-              <span style={{ color: 'var(--text-3)', fontSize: 12 }}>\u2014</span>
+              <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
               <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
                 style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 12.5, fontFamily: 'inherit', outline: 'none', background: 'var(--bg)' }} />
               <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
@@ -4509,7 +4509,7 @@
           <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Campaign Performance</h3>
-              <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Click row to edit \u00b7 Click header to sort \u00b7 Ad spend saved per month ({adPeriod})</span>
+              <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Click row to edit · Click header to sort · Ad spend saved per month ({adPeriod})</span>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ minWidth: 1100 }}>
@@ -5165,6 +5165,7 @@
       const [sortDir, setSortDir] = useState('desc');
       const [allLeads, setAllLeads] = useState([]);
       const [selectedMember, setSelectedMember] = useState('');
+      const [detailMember, setDetailMember] = useState(null);
 
       const load = useCallback(async () => {
         setLoading(true);
@@ -5195,7 +5196,15 @@
       useEffect(() => { load(); }, [load]);
 
       return (
-        <div style={{ maxWidth: 1100 }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {detailMember && (
+            <MemberDetailPanel
+              member={detailMember}
+              showToast={showToast}
+              onOpenLead={onOpenLead}
+              onClose={() => setDetailMember(null)}
+            />
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Team Performance</h2>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -5216,10 +5225,10 @@
             <SubTabBtn id="tasks" active={subTab === 'tasks'} onClick={setSubTab}>Tasks ({tasks.filter(t => t.status === 'open').length} open)</SubTabBtn>
           </div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>Loading\u2026</div>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>Loading…</div>
           ) : (
             <>
-              {subTab === 'performance' && <TeamPerformanceTab metrics={teamMetrics} sortCol={sortCol} sortDir={sortDir} setSortCol={setSortCol} setSortDir={setSortDir} selectedMember={selectedMember} />}
+              {subTab === 'performance' && <TeamPerformanceTab metrics={teamMetrics} sortCol={sortCol} sortDir={sortDir} setSortCol={setSortCol} setSortDir={setSortDir} selectedMember={selectedMember} onSelectMember={setDetailMember} />}
               {subTab === 'idle' && <TeamIdleLeadsTab leads={idleLeads} onOpenLead={onOpenLead} />}
               {subTab === 'tasks' && <TeamTasksTab tasks={tasks} teamMembers={teamMembers} allLeads={allLeads} showToast={showToast} reload={load} />}
             </>
@@ -5228,7 +5237,7 @@
       );
     }
 
-    function TeamPerformanceTab({ metrics, sortCol, sortDir, setSortCol, setSortDir, selectedMember }) {
+    function TeamPerformanceTab({ metrics, sortCol, sortDir, setSortCol, setSortDir, selectedMember, onSelectMember }) {
       const sorted = [...metrics].sort((a, b) => {
         const av = a[sortCol] ?? 0;
         const bv = b[sortCol] ?? 0;
@@ -5258,9 +5267,11 @@
               {sorted.map(m => {
                 const isMe = selectedMember === m.member;
                 return (
-                  <tr key={m.member} style={{ borderTop: '1px solid var(--border)', background: isMe ? 'var(--primary)18' : 'transparent' }}>
+                  <tr key={m.member} style={{ borderTop: '1px solid var(--border)', background: isMe ? 'var(--primary)18' : 'transparent', cursor: 'pointer' }}
+                    onClick={() => onSelectMember(m.member)}>
                     <td style={{ padding: '10px 12px', fontWeight: isMe ? 700 : 600 }}>
-                      {isMe && <span style={{ marginRight: 6 }}>👤</span>}{m.member}
+                      {isMe && <span style={{ marginRight: 6 }}>👤</span>}
+                      <span style={{ color: 'var(--primary)', textDecoration: 'underline', textDecorationStyle: 'dotted' }}>{m.member}</span>
                     </td>
                     <td style={{ padding: '10px 12px', textAlign: 'right' }}>{m.deals_created}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right' }}>{m.deals_advanced}</td>
@@ -5274,6 +5285,111 @@
               })}
             </tbody>
           </table>
+        </div>
+      );
+    }
+
+    function MemberDetailPanel({ member, onClose, showToast, onOpenLead }) {
+      const [tasks, setTasks] = useState([]);
+      const [movements, setMovements] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        if (!member) return;
+        setLoading(true);
+        Promise.all([
+          supabase.from('tasks').select('*').eq('assigned_to', member).order('due_date', { ascending: true }),
+          supabase.from('status_history')
+            .select('*, leads(first_name, last_name, username, telegram_id)')
+            .eq('changed_by', member)
+            .order('created_at', { ascending: false })
+            .limit(40),
+        ]).then(([tRes, mRes]) => {
+          setTasks(tRes.data || []);
+          setMovements(mRes.data || []);
+          setLoading(false);
+        }).catch(() => setLoading(false));
+      }, [member]);
+
+      const today = new Date().toISOString().split('T')[0];
+      const overdue = tasks.filter(t => t.status !== 'done' && t.due_date && t.due_date < today);
+      const inProgress = tasks.filter(t => t.status === 'in_progress');
+      const open = tasks.filter(t => t.status === 'open' && !(t.due_date && t.due_date < today));
+      const done = tasks.filter(t => t.status === 'done');
+
+      const taskRow = (t, color) => (
+        <div key={t.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 500, textDecoration: t.status === 'done' ? 'line-through' : 'none', color }}>{t.title}</span>
+            {t.due_date && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t.due_date}</span>}
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+          <div className="panel" style={{ width: 480, marginLeft: 'auto', height: '100vh', borderRadius: 0, overflowY: 'auto' }}>
+            <div className="panel-header">
+              <h2 style={{ fontSize: 17, margin: 0 }}>👤 {member}</h2>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--text-3)', lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+            {loading ? (
+              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</div>
+            ) : (
+              <div style={{ padding: '0 0 32px' }}>
+                {/* Tasks */}
+                <div className="panel-section">
+                  <h3 style={{ marginBottom: 12 }}>Tasks ({tasks.length})</h3>
+                  {tasks.length === 0 && <div className="empty">No tasks assigned</div>}
+                  {overdue.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', marginBottom: 6 }}>Overdue ({overdue.length})</div>
+                      {overdue.map(t => taskRow(t, '#DC2626'))}
+                    </div>
+                  )}
+                  {inProgress.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', marginBottom: 6 }}>In Progress ({inProgress.length})</div>
+                      {inProgress.map(t => taskRow(t, 'var(--text)'))}
+                    </div>
+                  )}
+                  {open.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#CA8A04', textTransform: 'uppercase', marginBottom: 6 }}>Open ({open.length})</div>
+                      {open.map(t => taskRow(t, 'var(--text)'))}
+                    </div>
+                  )}
+                  {done.length > 0 && (
+                    <div style={{ marginBottom: 4 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#16A34A', textTransform: 'uppercase', marginBottom: 6 }}>Done ({done.length})</div>
+                      {done.map(t => taskRow(t, 'var(--text-3)'))}
+                    </div>
+                  )}
+                </div>
+                {/* Lead movements */}
+                <div className="panel-section">
+                  <h3 style={{ marginBottom: 12 }}>Lead Movements ({movements.length})</h3>
+                  {movements.length === 0 && <div className="empty">No recorded movements</div>}
+                  {movements.map(m => {
+                    const lead = Array.isArray(m.leads) ? m.leads[0] : m.leads;
+                    const name = lead ? ([lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.username || `#${lead.telegram_id}`) : '—';
+                    return (
+                      <div key={m.id} className="activity-item" style={{ justifyContent: 'space-between', cursor: lead ? 'pointer' : 'default' }}
+                        onClick={() => lead && onOpenLead({ ...lead })}>
+                        <div>
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>{name}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-3)', marginLeft: 8 }}>
+                            {STATUS_LABELS[m.old_status] || m.old_status} → {STATUS_LABELS[m.new_status] || m.new_status}
+                          </span>
+                        </div>
+                        <span className="time">{timeAgo(m.created_at)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -5328,6 +5444,15 @@
       if (t.due_date && t.due_date < today) return { label: 'Overdue', color: '#DC2626' };
       return TASK_STATUSES[0];
     };
+
+    function TaskSec({ title, children }) {
+      return (
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 4, marginBottom: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>{title}</div>
+          {children}
+        </div>
+      );
+    }
 
     function TaskDetailPanel({ task, allLeads, teamMembers, showToast, onClose, onRefresh }) {
       const [form, setForm] = useState({ title: '', status: 'open', assigned_to: '', due_date: '', telegram_id: '', description: '' });
@@ -5419,18 +5544,12 @@
 
       const inp = { width: '100%', padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: 'var(--surface)', color: 'var(--text)' };
       const lbl = { display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' };
-      const Sec = ({ title, children }) => (
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 4, marginBottom: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>{title}</div>
-          {children}
-        </div>
-      );
 
       return (
         <div style={{ width: 360, flexShrink: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 180px)', overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontWeight: 700, fontSize: 14 }}>Task Detail</span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--text-3)', lineHeight: 1, padding: 0 }}>\u00d7</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--text-3)', lineHeight: 1, padding: 0 }}>×</button>
           </div>
           <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div><label style={lbl}>Title</label><input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} style={inp} /></div>
@@ -5468,14 +5587,14 @@
             </div>
             <div>
               <label style={lbl}>Description</label>
-              <textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} placeholder="Add a description\u2026" style={{...inp, resize: 'vertical'}} />
+              <textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} placeholder="Add a description…" style={{...inp, resize: 'vertical'}} />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary" onClick={save} disabled={saving} style={{ flex: 1, fontSize: 13 }}>{saving ? 'Saving\u2026' : 'Save Changes'}</button>
               <button onClick={deleteTask} style={{ padding: '8px 14px', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: 'var(--r)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Delete</button>
             </div>
 
-            <Sec title={`Sub-tasks (${subTasks.filter(s => s.status === 'done').length}/${subTasks.length})`}>
+            <TaskSec title={`Sub-tasks (${subTasks.filter(s => s.status === 'done').length}/${subTasks.length})`}>
               {subTasks.map(st => (
                 <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
                   <input type="checkbox" checked={st.status === 'done'} onChange={() => toggleSubTask(st)} style={{ cursor: 'pointer', flexShrink: 0 }} />
@@ -5483,18 +5602,18 @@
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                <input value={newSubTitle} onChange={e => setNewSubTitle(e.target.value)} placeholder="Add sub-task\u2026" onKeyDown={e => e.key === 'Enter' && addSubTask()}
+                <input value={newSubTitle} onChange={e => setNewSubTitle(e.target.value)} placeholder="Add sub-task…" onKeyDown={e => e.key === 'Enter' && addSubTask()}
                   style={{ flex: 1, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
                 <button onClick={addSubTask} className="btn" style={{ fontSize: 12, padding: '5px 12px' }}>Add</button>
               </div>
-            </Sec>
+            </TaskSec>
 
-            <Sec title={`Comments (${comments.length})`}>
+            <TaskSec title={`Comments (${comments.length})`}>
               {comments.map(c => (
                 <div key={c.id} style={{ background: 'var(--surface-alt)', borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)' }}>{c.author || 'Anonymous'} \u00b7 {new Date(c.created_at).toLocaleDateString()}</span>
-                    <button onClick={() => deleteComment(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 18, lineHeight: 1, padding: 0 }}>\u00d7</button>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)' }}>{c.author || 'Anonymous'} · {new Date(c.created_at).toLocaleDateString()}</span>
+                    <button onClick={() => deleteComment(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
                   </div>
                   <div style={{ fontSize: 13 }}>{c.body}</div>
                 </div>
@@ -5502,11 +5621,11 @@
               <input value={commentAuthor} onChange={e => setCommentAuthor(e.target.value)} placeholder="Your name (optional)"
                 style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: 6, background: 'var(--surface)', color: 'var(--text)' }} />
               <div style={{ display: 'flex', gap: 6 }}>
-                <textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Write a comment\u2026" rows={2}
+                <textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Write a comment…" rows={2}
                   style={{ flex: 1, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none', resize: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
                 <button onClick={addComment} className="btn" style={{ fontSize: 12, padding: '5px 12px', alignSelf: 'flex-end' }}>Add</button>
               </div>
-            </Sec>
+            </TaskSec>
           </div>
         </div>
       );
@@ -5619,7 +5738,7 @@
                             </td>
                             <td style={{ padding: '10px 12px', fontWeight: 500, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
                               {t.title}
-                              {t.telegram_id && leadMap[t.telegram_id] && <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>\u2192 {leadMap[t.telegram_id]}</span>}
+                              {t.telegram_id && leadMap[t.telegram_id] && <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>→ {leadMap[t.telegram_id]}</span>}
                             </td>
                             <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12.5 }}>{t.assigned_to || '\u2014'}</td>
                             <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12 }}>{t.due_date || '\u2014'}</td>
