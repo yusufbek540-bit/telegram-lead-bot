@@ -4493,7 +4493,7 @@
                     <div style={{ width: 100, fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>{f.label}</div>
                     <div style={{ flex: 1, background: 'var(--surface-alt)', borderRadius: 4, height: 28, position: 'relative', overflow: 'hidden' }}>
                       <div style={{ width: `${funnelMax ? (f.count / funnelMax * 100) : 0}%`, background: f.color, height: '100%', borderRadius: 4, transition: 'width 0.4s ease', minWidth: f.count > 0 ? 4 : 0 }} />
-                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 700, color: '#fff', mixBlendMode: 'difference' }}>{f.count}</span>
+                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 700, color: '#fff' }}>{f.count}</span>
                     </div>
                     <div style={{ width: 48, fontSize: 11, color: 'var(--text-3)', textAlign: 'right', flexShrink: 0 }}>
                       {funnelMax ? `${(f.count / funnelMax * 100).toFixed(0)}%` : '\u2014'}
