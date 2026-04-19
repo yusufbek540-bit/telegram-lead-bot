@@ -122,6 +122,10 @@
       border: none;
       transition: background 0.15s, color 0.15s;
     }
+    .sidebar.collapsed .nav a {
+      justify-content: center;
+      padding: 9px 0;
+    }
 
     .nav a:hover {
       background: rgba(255,255,255,0.06);
@@ -1641,14 +1645,56 @@
 
           <div className="card" style={{ marginTop: 16 }}>
              <h3>Service Interest Distribution</h3>
-             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12 }}>
-                {svcInterestDist.map(s => (
-                  <div key={s.name} style={{ background: '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: 13 }}>
-                    <span style={{ fontWeight: 600 }}>{s.name}</span>: {s.count}
-                  </div>
-                ))}
-                {svcInterestDist.length === 0 && <div className="empty" style={{ width: '100%', padding: '10px 0' }}>No service data yet</div>}
-             </div>
+             {svcInterestDist.length === 0 ? (
+               <div className="empty">No service data yet</div>
+             ) : (
+               <div style={{ marginTop: 12 }}>
+                 {(() => {
+                   const total = svcInterestDist.reduce((s, v) => s + v.count, 0);
+                   return svcInterestDist.map(s => {
+                     const pct = total > 0 ? ((s.count / total) * 100).toFixed(1) : '0';
+                     return (
+                       <div key={s.name} style={{ marginBottom: 10 }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 13 }}>
+                           <span style={{ fontWeight: 600 }}>{s.name}</span>
+                           <span style={{ color: 'var(--text-3)' }}>{s.count} · {pct}%</span>
+                         </div>
+                         <div style={{ background: 'var(--border)', borderRadius: 4, height: 8 }}>
+                           <div style={{ background: 'var(--primary)', borderRadius: 4, height: '100%', width: `${pct}%`, transition: 'width 0.3s' }} />
+                         </div>
+                       </div>
+                     );
+                   });
+                 })()}
+               </div>
+             )}
+          </div>
+
+          <div className="card" style={{ marginTop: 16 }}>
+             <h3>Lead Sources</h3>
+             {sources.length === 0 ? (
+               <div className="empty">No source data yet</div>
+             ) : (
+               <div style={{ marginTop: 12 }}>
+                 {(() => {
+                   const total = sources.reduce((s, v) => s + v.lead_count, 0);
+                   return [...sources].sort((a, b) => b.lead_count - a.lead_count).map(s => {
+                     const pct = total > 0 ? ((s.lead_count / total) * 100).toFixed(1) : '0';
+                     return (
+                       <div key={s.source} style={{ marginBottom: 10 }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 13 }}>
+                           <span style={{ fontWeight: 600 }}>{s.source}</span>
+                           <span style={{ color: 'var(--text-3)' }}>{s.lead_count} · {pct}%</span>
+                         </div>
+                         <div style={{ background: 'var(--border)', borderRadius: 4, height: 8 }}>
+                           <div style={{ background: '#2563eb', borderRadius: 4, height: '100%', width: `${pct}%`, transition: 'width 0.3s' }} />
+                         </div>
+                       </div>
+                     );
+                   });
+                 })()}
+               </div>
+             )}
           </div>
 
           <div className="card">
@@ -5034,6 +5080,80 @@
       );
     }
 
+    function MemberDashboardCard({ member, metrics, idleLeads, tasks }) {
+      const m = metrics.find(r => r.member === member);
+      if (!m) return null;
+      const myIdle = idleLeads.filter(l => l.assigned_to === member);
+      const myOpenTasks = tasks.filter(t => t.assigned_to === member && t.status === 'open');
+      const myOverdue = tasks.filter(t => t.assigned_to === member && t.status === 'open' && t.due_date && t.due_date < new Date().toISOString().split('T')[0]);
+      const teamAvgContact = metrics.length > 0
+        ? (metrics.reduce((s, r) => s + (r.avg_days_no_contact || 0), 0) / metrics.length).toFixed(1)
+        : 0;
+
+      const cards = [
+        {
+          icon: myIdle.length > 0 ? '🔥' : '✅',
+          color: myIdle.length > 0 ? '#DC2626' : '#16A34A',
+          bg: myIdle.length > 0 ? '#FEF2F2' : '#F0FDF4',
+          title: myIdle.length > 0
+            ? `У тебя ${myIdle.length} лид${myIdle.length === 1 ? '' : myIdle.length < 5 ? 'а' : 'ов'} без действия — горят`
+            : 'Все лиды в работе',
+          sub: myIdle.length > 0 ? 'Требуют срочного контакта' : 'Отличная работа!',
+        },
+        {
+          icon: myOverdue.length > 0 ? '⚠️' : '📋',
+          color: myOverdue.length > 0 ? '#CA8A04' : '#2563EB',
+          bg: myOverdue.length > 0 ? '#FFFBEB' : '#EFF6FF',
+          title: `Задач закрыто: ${m.tasks_done}` + (myOpenTasks.length > 0 ? `, открыто: ${myOpenTasks.length}` : ''),
+          sub: myOverdue.length > 0
+            ? `Просрочено: ${myOverdue.length} — нужно закрыть`
+            : m.tasks_done > 0 ? 'Хороший результат!' : 'Задач пока нет',
+        },
+        {
+          icon: m.avg_days_no_contact > 7 ? '🚨' : m.avg_days_no_contact > 3 ? '⏰' : '💬',
+          color: m.avg_days_no_contact > 7 ? '#DC2626' : m.avg_days_no_contact > 3 ? '#CA8A04' : '#16A34A',
+          bg: m.avg_days_no_contact > 7 ? '#FEF2F2' : m.avg_days_no_contact > 3 ? '#FFFBEB' : '#F0FDF4',
+          title: `Среднее время без контакта: ${m.avg_days_no_contact}д`,
+          sub: `Среднее по команде: ${teamAvgContact}д`,
+        },
+        {
+          icon: '📈',
+          color: '#7C3AED',
+          bg: '#F5F3FF',
+          title: `Сделок создано за неделю: ${m.deals_created}`,
+          sub: `Продвинуто по воронке: ${m.deals_advanced}`,
+        },
+      ];
+
+      return (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: 'var(--text)' }}>
+            Моя неделя — {member}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+            {cards.map((c, i) => (
+              <div key={i} style={{ background: c.bg, border: `1px solid ${c.color}30`, borderRadius: 10, padding: '14px 16px' }}>
+                <div style={{ fontSize: 20, marginBottom: 6 }}>{c.icon}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: c.color, lineHeight: 1.4 }}>{c.title}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{c.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function SubTabBtn({ id, active, onClick, children }) {
+      return (
+        <button onClick={() => onClick(id)} style={{
+          padding: '6px 16px', fontSize: 13, fontWeight: 600, borderRadius: 20,
+          border: '1px solid var(--border)', cursor: 'pointer',
+          background: active ? 'var(--primary)' : 'var(--surface)',
+          color: active ? '#fff' : 'var(--text-2)',
+        }}>{children}</button>
+      );
+    }
+
     function TeamTab({ showToast, onOpenLead }) {
       const [subTab, setSubTab] = useState('performance');
       const [teamMetrics, setTeamMetrics] = useState([]);
@@ -5043,12 +5163,8 @@
       const [teamMembers, setTeamMembers] = useState([]);
       const [sortCol, setSortCol] = useState('deals_advanced');
       const [sortDir, setSortDir] = useState('desc');
-      const [taskTitle, setTaskTitle] = useState('');
-      const [taskAssignee, setTaskAssignee] = useState('');
-      const [taskDue, setTaskDue] = useState('');
-      const [taskSaving, setTaskSaving] = useState(false);
-      const [activeLeads, setActiveLeads] = useState([]);
-      const [taskLeadId, setTaskLeadId] = useState('');
+      const [allLeads, setAllLeads] = useState([]);
+      const [selectedMember, setSelectedMember] = useState('');
 
       const load = useCallback(async () => {
         setLoading(true);
@@ -5057,18 +5173,18 @@
           const [tmRes, metricsRes, idleRes, tasksRes, leadsRes] = await Promise.all([
             supabase.from('team_members').select('*').order('name'),
             supabase.from('v_team_metrics').select('*'),
-            supabase.from('leads').select('telegram_id, name, username, assigned_to, status, last_activity_at, created_at')
+            supabase.from('leads').select('telegram_id, first_name, last_name, username, assigned_to, status, last_activity_at, created_at')
               .or(`last_activity_at.lt.${threeDaysAgo},last_activity_at.is.null`)
               .not('status', 'in', '(converted,lost)')
               .order('last_activity_at', { ascending: true, nullsFirst: true }),
-            supabase.from('tasks').select('*, leads(name)').order('due_date', { ascending: true }),
-            supabase.from('leads').select('telegram_id, name, username').not('status', 'in', '(converted,lost)').order('name', { ascending: true }),
+            supabase.from('tasks').select('*').order('due_date', { ascending: true }),
+            supabase.from('leads').select('telegram_id, first_name, last_name, username').order('first_name', { ascending: true }),
           ]);
           setTeamMembers(tmRes.data || []);
           setTeamMetrics(metricsRes.data || []);
           setIdleLeads(idleRes.data || []);
           setTasks(tasksRes.data || []);
-          setActiveLeads(leadsRes.data || []);
+          setAllLeads(leadsRes.data || []);
         } catch (e) {
           showToast('Failed to load team data: ' + e.message, 'error');
         } finally {
@@ -5078,40 +5194,41 @@
 
       useEffect(() => { load(); }, [load]);
 
-      const SubTabBtn = ({ id, label }) => (
-        <button onClick={() => setSubTab(id)} style={{
-          padding: '6px 16px', fontSize: 13, fontWeight: 600, borderRadius: 20,
-          border: '1px solid var(--border)', cursor: 'pointer',
-          background: subTab === id ? 'var(--primary)' : 'var(--surface)',
-          color: subTab === id ? '#fff' : 'var(--text-2)',
-        }}>{label}</button>
-      );
-
       return (
         <div style={{ maxWidth: 1100 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Team Performance</h2>
-            <button className="btn" onClick={load} style={{ fontSize: 12.5 }}>Refresh</button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select value={selectedMember} onChange={e => setSelectedMember(e.target.value)}
+                style={{ fontSize: 13, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }}>
+                <option value="">Вид: вся команда</option>
+                {teamMembers.map(tm => <option key={tm.name} value={tm.name}>Мой дашборд — {tm.name}</option>)}
+              </select>
+              <button className="btn" onClick={load} style={{ fontSize: 12.5 }}>Refresh</button>
+            </div>
           </div>
+          {selectedMember && !loading && (
+            <MemberDashboardCard member={selectedMember} metrics={teamMetrics} idleLeads={idleLeads} tasks={tasks} />
+          )}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-            <SubTabBtn id="performance" label="Performance" />
-            <SubTabBtn id="idle" label={`Idle Leads (${idleLeads.length})`} />
-            <SubTabBtn id="tasks" label={`Tasks (${tasks.filter(t => t.status === 'open').length} open)`} />
+            <SubTabBtn id="performance" active={subTab === 'performance'} onClick={setSubTab}>Performance</SubTabBtn>
+            <SubTabBtn id="idle" active={subTab === 'idle'} onClick={setSubTab}>Idle Leads ({idleLeads.length})</SubTabBtn>
+            <SubTabBtn id="tasks" active={subTab === 'tasks'} onClick={setSubTab}>Tasks ({tasks.filter(t => t.status === 'open').length} open)</SubTabBtn>
           </div>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>Loading\u2026</div>
           ) : (
             <>
-              {subTab === 'performance' && <TeamPerformanceTab metrics={teamMetrics} sortCol={sortCol} sortDir={sortDir} setSortCol={setSortCol} setSortDir={setSortDir} />}
+              {subTab === 'performance' && <TeamPerformanceTab metrics={teamMetrics} sortCol={sortCol} sortDir={sortDir} setSortCol={setSortCol} setSortDir={setSortDir} selectedMember={selectedMember} />}
               {subTab === 'idle' && <TeamIdleLeadsTab leads={idleLeads} onOpenLead={onOpenLead} />}
-              {subTab === 'tasks' && <TeamTasksTab tasks={tasks} teamMembers={teamMembers} activeLeads={activeLeads} taskTitle={taskTitle} setTaskTitle={setTaskTitle} taskAssignee={taskAssignee} setTaskAssignee={setTaskAssignee} taskDue={taskDue} setTaskDue={setTaskDue} taskLeadId={taskLeadId} setTaskLeadId={setTaskLeadId} taskSaving={taskSaving} setTaskSaving={setTaskSaving} showToast={showToast} reload={load} />}
+              {subTab === 'tasks' && <TeamTasksTab tasks={tasks} teamMembers={teamMembers} allLeads={allLeads} showToast={showToast} reload={load} />}
             </>
           )}
         </div>
       );
     }
 
-    function TeamPerformanceTab({ metrics, sortCol, sortDir, setSortCol, setSortDir }) {
+    function TeamPerformanceTab({ metrics, sortCol, sortDir, setSortCol, setSortDir, selectedMember }) {
       const sorted = [...metrics].sort((a, b) => {
         const av = a[sortCol] ?? 0;
         const bv = b[sortCol] ?? 0;
@@ -5130,26 +5247,31 @@
             <thead>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', background: 'var(--surface-alt)', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Member</th>
-                <Th col="deals_created">Deals Created</Th>
-                <Th col="deals_advanced">Advanced</Th>
-                <Th col="tasks_done">Tasks Done</Th>
-                <Th col="tasks_overdue">Overdue</Th>
-                <Th col="avg_days_no_contact">Avg Days No Contact</Th>
+                <Th col="deals_created">Сделок создано</Th>
+                <Th col="deals_advanced">Продвинуто</Th>
+                <Th col="tasks_done">Задач закрыто</Th>
+                <Th col="tasks_overdue">Просрочено</Th>
+                <Th col="avg_days_no_contact">Без контакта (дн)</Th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map(m => (
-                <tr key={m.member} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{m.member}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right' }}>{m.deals_created}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right' }}>{m.deals_advanced}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right', color: '#16A34A' }}>{m.tasks_done}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right', color: m.tasks_overdue > 0 ? '#DC2626' : 'var(--text-3)' }}>{m.tasks_overdue}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right', color: m.avg_days_no_contact > 7 ? '#DC2626' : m.avg_days_no_contact > 3 ? '#CA8A04' : 'var(--text)' }}>
-                    {m.avg_days_no_contact}d
-                  </td>
-                </tr>
-              ))}
+              {sorted.map(m => {
+                const isMe = selectedMember === m.member;
+                return (
+                  <tr key={m.member} style={{ borderTop: '1px solid var(--border)', background: isMe ? 'var(--primary)18' : 'transparent' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: isMe ? 700 : 600 }}>
+                      {isMe && <span style={{ marginRight: 6 }}>👤</span>}{m.member}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>{m.deals_created}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>{m.deals_advanced}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#16A34A' }}>{m.tasks_done}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: m.tasks_overdue > 0 ? '#DC2626' : 'var(--text-3)' }}>{m.tasks_overdue}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: m.avg_days_no_contact > 7 ? '#DC2626' : m.avg_days_no_contact > 3 ? '#CA8A04' : 'var(--text)' }}>
+                      {m.avg_days_no_contact}д
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -5177,7 +5299,7 @@
                   <tr key={l.telegram_id} onClick={() => onOpenLead(l)} style={{ borderTop: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
                     onMouseLeave={e => e.currentTarget.style.background = ''}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>{l.name || l.username || `#${l.telegram_id}`}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || `#${l.telegram_id}`}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-2)' }}>{l.assigned_to || '\u2014'}</td>
                     <td style={{ padding: '10px 12px' }}>
                       <span className="status-badge" style={{ background: STATUS_COLORS[l.status] || '#94a3b8' }}>{STATUS_LABELS[l.status] || l.status}</span>
@@ -5192,58 +5314,249 @@
       );
     }
 
-    function TeamTasksTab({ tasks, teamMembers, activeLeads, taskTitle, setTaskTitle, taskAssignee, setTaskAssignee, taskDue, setTaskDue, taskLeadId, setTaskLeadId, taskSaving, setTaskSaving, showToast, reload }) {
+    const TASK_STATUSES = [
+      { value: 'open',        label: 'Open',        color: '#CA8A04' },
+      { value: 'in_progress', label: 'In Progress',  color: '#2563EB' },
+      { value: 'done',        label: 'Done',         color: '#16A34A' },
+      { value: 'blocked',     label: 'Blocked',      color: '#DC2626' },
+    ];
+
+    const getTaskStatus = (t) => {
+      const found = TASK_STATUSES.find(s => s.value === t.status);
+      if (found && t.status !== 'open') return found;
+      const today = new Date().toISOString().split('T')[0];
+      if (t.due_date && t.due_date < today) return { label: 'Overdue', color: '#DC2626' };
+      return TASK_STATUSES[0];
+    };
+
+    function TaskDetailPanel({ task, allLeads, teamMembers, showToast, onClose, onRefresh }) {
+      const [form, setForm] = useState({ title: '', status: 'open', assigned_to: '', due_date: '', telegram_id: '', description: '' });
+      const [saving, setSaving] = useState(false);
+      const [comments, setComments] = useState([]);
+      const [subTasks, setSubTasks] = useState([]);
+      const [newComment, setNewComment] = useState('');
+      const [commentAuthor, setCommentAuthor] = useState('');
+      const [newSubTitle, setNewSubTitle] = useState('');
+
+      useEffect(() => {
+        setForm({
+          title: task.title || '',
+          status: task.status || 'open',
+          assigned_to: task.assigned_to || '',
+          due_date: task.due_date || '',
+          telegram_id: task.telegram_id ? String(task.telegram_id) : '',
+          description: task.description || '',
+        });
+        loadDetail();
+      }, [task.id]);
+
+      const loadDetail = async () => {
+        const [cRes, stRes] = await Promise.all([
+          supabase.from('task_comments').select('*').eq('task_id', task.id).order('created_at'),
+          supabase.from('tasks').select('*').eq('parent_id', task.id).order('created_at'),
+        ]);
+        setComments(cRes.data || []);
+        setSubTasks(stRes.data || []);
+      };
+
+      const save = async () => {
+        if (!form.title.trim()) { showToast('Title required', 'error'); return; }
+        setSaving(true);
+        try {
+          const { error } = await supabase.from('tasks').update({
+            title: form.title.trim(), status: form.status,
+            assigned_to: form.assigned_to || null, due_date: form.due_date || null,
+            telegram_id: form.telegram_id ? parseInt(form.telegram_id) : null,
+            description: form.description || null, updated_at: new Date().toISOString(),
+          }).eq('id', task.id);
+          if (error) throw error;
+          showToast('Task updated', 'success');
+          onRefresh();
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        finally { setSaving(false); }
+      };
+
+      const addComment = async () => {
+        if (!newComment.trim()) return;
+        const { error } = await supabase.from('task_comments').insert({ task_id: task.id, body: newComment.trim(), author: commentAuthor.trim() || null });
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        setNewComment('');
+        loadDetail();
+      };
+
+      const deleteComment = async (id) => {
+        const { error } = await supabase.from('task_comments').delete().eq('id', id);
+        if (!error) loadDetail();
+      };
+
+      const addSubTask = async () => {
+        if (!newSubTitle.trim()) return;
+        const { error } = await supabase.from('tasks').insert({
+          title: newSubTitle.trim(), parent_id: task.id, status: 'open',
+          assigned_to: form.assigned_to || null,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        });
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        setNewSubTitle('');
+        loadDetail();
+        onRefresh();
+      };
+
+      const toggleSubTask = async (st) => {
+        const ns = st.status === 'done' ? 'open' : 'done';
+        await supabase.from('tasks').update({ status: ns, updated_at: new Date().toISOString() }).eq('id', st.id);
+        loadDetail();
+      };
+
+      const deleteTask = async () => {
+        if (!confirm('Delete this task?')) return;
+        const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        showToast('Task deleted', 'success');
+        onClose();
+        onRefresh();
+      };
+
+      const inp = { width: '100%', padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: 'var(--surface)', color: 'var(--text)' };
+      const lbl = { display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' };
+      const Sec = ({ title, children }) => (
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 4, marginBottom: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>{title}</div>
+          {children}
+        </div>
+      );
+
+      return (
+        <div style={{ width: 360, flexShrink: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 180px)', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>Task Detail</span>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--text-3)', lineHeight: 1, padding: 0 }}>\u00d7</button>
+          </div>
+          <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div><label style={lbl}>Title</label><input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} style={inp} /></div>
+            <div>
+              <label style={lbl}>Status</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {TASK_STATUSES.map(s => (
+                  <button key={s.value} onClick={() => setForm(f => ({...f, status: s.value}))}
+                    style={{ padding: '5px 12px', borderRadius: 20, border: `1.5px solid ${s.color}`, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                      background: form.status === s.value ? s.color : 'transparent', color: form.status === s.value ? '#fff' : s.color }}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <label style={lbl}>Assignee</label>
+                <select value={form.assigned_to} onChange={e => setForm(f => ({...f, assigned_to: e.target.value}))} style={inp}>
+                  <option value="">Unassigned</option>
+                  {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={lbl}>Due Date</label>
+                <input type="date" value={form.due_date} onChange={e => setForm(f => ({...f, due_date: e.target.value}))} style={inp} />
+              </div>
+            </div>
+            <div>
+              <label style={lbl}>Linked Lead</label>
+              <select value={form.telegram_id} onChange={e => setForm(f => ({...f, telegram_id: e.target.value}))} style={inp}>
+                <option value="">No lead</option>
+                {allLeads.map(l => <option key={l.telegram_id} value={String(l.telegram_id)}>{l.name || l.username || `#${l.telegram_id}`}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Description</label>
+              <textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} placeholder="Add a description\u2026" style={{...inp, resize: 'vertical'}} />
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" onClick={save} disabled={saving} style={{ flex: 1, fontSize: 13 }}>{saving ? 'Saving\u2026' : 'Save Changes'}</button>
+              <button onClick={deleteTask} style={{ padding: '8px 14px', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: 'var(--r)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Delete</button>
+            </div>
+
+            <Sec title={`Sub-tasks (${subTasks.filter(s => s.status === 'done').length}/${subTasks.length})`}>
+              {subTasks.map(st => (
+                <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                  <input type="checkbox" checked={st.status === 'done'} onChange={() => toggleSubTask(st)} style={{ cursor: 'pointer', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, textDecoration: st.status === 'done' ? 'line-through' : 'none', color: st.status === 'done' ? 'var(--text-3)' : 'var(--text)' }}>{st.title}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <input value={newSubTitle} onChange={e => setNewSubTitle(e.target.value)} placeholder="Add sub-task\u2026" onKeyDown={e => e.key === 'Enter' && addSubTask()}
+                  style={{ flex: 1, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+                <button onClick={addSubTask} className="btn" style={{ fontSize: 12, padding: '5px 12px' }}>Add</button>
+              </div>
+            </Sec>
+
+            <Sec title={`Comments (${comments.length})`}>
+              {comments.map(c => (
+                <div key={c.id} style={{ background: 'var(--surface-alt)', borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)' }}>{c.author || 'Anonymous'} \u00b7 {new Date(c.created_at).toLocaleDateString()}</span>
+                    <button onClick={() => deleteComment(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 18, lineHeight: 1, padding: 0 }}>\u00d7</button>
+                  </div>
+                  <div style={{ fontSize: 13 }}>{c.body}</div>
+                </div>
+              ))}
+              <input value={commentAuthor} onChange={e => setCommentAuthor(e.target.value)} placeholder="Your name (optional)"
+                style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: 6, background: 'var(--surface)', color: 'var(--text)' }} />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Write a comment\u2026" rows={2}
+                  style={{ flex: 1, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none', resize: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+                <button onClick={addComment} className="btn" style={{ fontSize: 12, padding: '5px 12px', alignSelf: 'flex-end' }}>Add</button>
+              </div>
+            </Sec>
+          </div>
+        </div>
+      );
+    }
+
+    function TeamTasksTab({ tasks, teamMembers, allLeads, showToast, reload }) {
+      const [selectedTask, setSelectedTask] = useState(null);
+      const [taskTitle, setTaskTitle] = useState('');
+      const [taskAssignee, setTaskAssignee] = useState('');
+      const [taskDue, setTaskDue] = useState('');
+      const [taskLeadId, setTaskLeadId] = useState('');
+      const [taskSaving, setTaskSaving] = useState(false);
+
+      useEffect(() => {
+        if (!selectedTask) return;
+        const updated = tasks.find(t => t.id === selectedTask.id);
+        if (updated) setSelectedTask(updated);
+      }, [tasks]);
+
+      const leadMap = useMemo(() =>
+        Object.fromEntries(allLeads.map(l => [l.telegram_id, [l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || `#${l.telegram_id}`])),
+        [allLeads]);
+
+      const rootTasks = tasks.filter(t => !t.parent_id);
+
       const createTask = async () => {
         if (!taskTitle.trim()) { showToast('Title is required', 'error'); return; }
         setTaskSaving(true);
         try {
-          const payload = {
-            title: taskTitle.trim(),
-            assigned_to: taskAssignee || null,
-            due_date: taskDue || null,
-            telegram_id: taskLeadId ? parseInt(taskLeadId) : null,
-            status: 'open',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          const { error } = await supabase.from('tasks').insert(payload);
+          const { error } = await supabase.from('tasks').insert({
+            title: taskTitle.trim(), assigned_to: taskAssignee || null, due_date: taskDue || null,
+            telegram_id: taskLeadId ? parseInt(taskLeadId) : null, status: 'open',
+            created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          });
           if (error) throw error;
           setTaskTitle(''); setTaskAssignee(''); setTaskDue(''); setTaskLeadId('');
           showToast('Task created', 'success');
           reload();
-        } catch (e) {
-          showToast('Error: ' + e.message, 'error');
-        } finally {
-          setTaskSaving(false);
-        }
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        finally { setTaskSaving(false); }
       };
 
-      const markDone = async (id) => {
-        try {
-          const { error } = await supabase.from('tasks').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', id);
-          if (error) throw error;
-          reload();
-        } catch (e) {
-          showToast('Error: ' + e.message, 'error');
-        }
+      const toggleDone = async (t) => {
+        const ns = t.status === 'done' ? 'open' : 'done';
+        const { error } = await supabase.from('tasks').update({ status: ns, updated_at: new Date().toISOString() }).eq('id', t.id);
+        if (error) showToast('Error: ' + error.message, 'error');
+        else reload();
       };
 
-      const deleteTask = async (id) => {
-        if (!confirm('Delete this task?')) return;
-        try {
-          const { error } = await supabase.from('tasks').delete().eq('id', id);
-          if (error) throw error;
-          reload();
-        } catch (e) {
-          showToast('Error: ' + e.message, 'error');
-        }
-      };
-
-      const getTaskStatus = (t) => {
-        if (t.status === 'done') return { label: 'Done', color: '#16A34A' };
-        if (t.due_date && new Date(t.due_date) < new Date()) return { label: 'Overdue', color: '#DC2626' };
-        return { label: 'Open', color: '#CA8A04' };
-      };
+      const inp = { width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: 'var(--surface)', color: 'var(--text)' };
 
       return (
         <div>
@@ -5252,90 +5565,86 @@
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div style={{ flex: '1 1 200px' }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase' }}>Title *</label>
-                <input value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Task title"
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                <input value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Task title" onKeyDown={e => e.key === 'Enter' && createTask()} style={inp} />
               </div>
               <div style={{ flex: '0 1 160px' }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase' }}>Assignee</label>
-                <select value={taskAssignee} onChange={e => setTaskAssignee(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', boxSizing: 'border-box' }}>
+                <select value={taskAssignee} onChange={e => setTaskAssignee(e.target.value)} style={inp}>
                   <option value="">Unassigned</option>
                   {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                 </select>
               </div>
               <div style={{ flex: '0 1 140px' }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase' }}>Due Date</label>
-                <input type="date" value={taskDue} onChange={e => setTaskDue(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                <input type="date" value={taskDue} onChange={e => setTaskDue(e.target.value)} style={inp} />
               </div>
               <div style={{ flex: '0 1 200px' }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase' }}>Lead (optional)</label>
-                <select value={taskLeadId} onChange={e => setTaskLeadId(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', boxSizing: 'border-box' }}>
+                <select value={taskLeadId} onChange={e => setTaskLeadId(e.target.value)} style={inp}>
                   <option value="">No lead</option>
-                  {activeLeads.map(l => (
-                    <option key={l.telegram_id} value={l.telegram_id}>
-                      {l.name || l.username || `#${l.telegram_id}`}
-                    </option>
-                  ))}
+                  {allLeads.map(l => <option key={l.telegram_id} value={l.telegram_id}>{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || `#${l.telegram_id}`}</option>)}
                 </select>
               </div>
-              <button className="btn btn-primary" onClick={createTask} disabled={taskSaving}
-                style={{ padding: '8px 20px', alignSelf: 'flex-end' }}>
+              <button className="btn btn-primary" onClick={createTask} disabled={taskSaving} style={{ padding: '8px 20px', alignSelf: 'flex-end' }}>
                 {taskSaving ? 'Saving\u2026' : 'Add Task'}
               </button>
             </div>
           </div>
 
-          {tasks.length === 0 ? (
-            <p style={{ color: 'var(--text-3)', fontSize: 13 }}>No tasks yet. Create one above.</p>
-          ) : (
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
-                <thead>
-                  <tr style={{ background: 'var(--surface-alt)' }}>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)', width: 32 }}></th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Task</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Assignee</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Due</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Status</th>
-                    <th style={{ width: 40 }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.map(t => {
-                    const st = getTaskStatus(t);
-                    return (
-                      <tr key={t.id} style={{ borderTop: '1px solid var(--border)', opacity: t.status === 'done' ? 0.5 : 1 }}>
-                        <td style={{ padding: '10px 12px' }}>
-                          <input type="checkbox" checked={t.status === 'done'} onChange={() => t.status === 'open' && markDone(t.id)}
-                            style={{ cursor: t.status === 'open' ? 'pointer' : 'default' }} />
-                        </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 500, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
-                          {t.title}
-                          {t.leads && <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>\u2192 {t.leads.name}</span>}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-2)' }}>{t.assigned_to || '\u2014'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12 }}>{t.due_date || '\u2014'}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: st.color }}>{st.label}</span>
-                        </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <button onClick={() => deleteTask(t.id)} title="Delete"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                            </svg>
-                          </button>
-                        </td>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {rootTasks.length === 0 ? (
+                <p style={{ color: 'var(--text-3)', fontSize: 13 }}>No tasks yet. Create one above.</p>
+              ) : (
+                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+                    <thead>
+                      <tr style={{ background: 'var(--surface-alt)' }}>
+                        <th style={{ padding: '10px 12px', width: 32 }}></th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Task</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Assignee</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Due</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--text-2)' }}>Status</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {rootTasks.map(t => {
+                        const st = getTaskStatus(t);
+                        const isSelected = selectedTask?.id === t.id;
+                        return (
+                          <tr key={t.id} onClick={() => setSelectedTask(t)}
+                            style={{ borderTop: '1px solid var(--border)', opacity: t.status === 'done' ? 0.55 : 1, cursor: 'pointer', background: isSelected ? 'var(--primary)18' : 'transparent' }}>
+                            <td style={{ padding: '10px 12px' }} onClick={e => { e.stopPropagation(); toggleDone(t); }}>
+                              <input type="checkbox" checked={t.status === 'done'} onChange={() => {}} style={{ cursor: 'pointer' }} />
+                            </td>
+                            <td style={{ padding: '10px 12px', fontWeight: 500, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
+                              {t.title}
+                              {t.telegram_id && leadMap[t.telegram_id] && <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>\u2192 {leadMap[t.telegram_id]}</span>}
+                            </td>
+                            <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12.5 }}>{t.assigned_to || '\u2014'}</td>
+                            <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12 }}>{t.due_date || '\u2014'}</td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: st.color, background: st.color + '18', padding: '2px 8px', borderRadius: 10 }}>{st.label}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          )}
+            {selectedTask && (
+              <TaskDetailPanel
+                task={selectedTask}
+                allLeads={allLeads}
+                teamMembers={teamMembers}
+                showToast={showToast}
+                onClose={() => setSelectedTask(null)}
+                onRefresh={reload}
+              />
+            )}
+          </div>
         </div>
       );
     }
@@ -5388,7 +5697,7 @@
 
       return (
         <div className="app">
-          <div className="sidebar" style={{ width: sidebarCollapsed ? 48 : 216 }}>
+          <div className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}`} style={{ width: sidebarCollapsed ? 48 : 216 }}>
             <div className="logo" style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}>
               {sidebarCollapsed ? (
                 <svg width="30" height="30" viewBox="0 0 768 768" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
