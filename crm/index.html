@@ -911,6 +911,11 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
     .center-load {
       display: flex;
       justify-content: center;
@@ -4023,7 +4028,50 @@
         }
       }, [showToast, dateFrom, dateTo, adPeriod, prevRange]);
 
-      useEffect(() => { load(); }, [load]);
+      const fetchAiAnalysis = useCallback(async (channelRows) => {
+        if (!channelRows || channelRows.length === 0) return;
+        setAiLoading(true);
+        setAiAnalysis(null);
+        try {
+          const channels = channelRows.map(r => ({
+            key: r.src,
+            spend: r.spend,
+            leads: r.leads,
+            converted: r.converted,
+            cpl: r.cpl,
+            cvr: r.leads > 0 ? parseFloat((r.converted / r.leads * 100).toFixed(1)) : 0,
+            roas: r.roas,
+          }));
+          const body = {
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a marketing analyst. Respond ONLY with valid JSON in the exact format requested.',
+              },
+              {
+                role: 'user',
+                content: `Analyze these ad campaigns for period ${adPeriod}:\n${JSON.stringify(channels, null, 2)}\n\nRespond with JSON: { "narrative": "2-3 sentence cross-channel summary comparing CPL, CVR, ROAS", "recommendations": ["action 1", "action 2", "action 3"] }`,
+              },
+            ],
+            response_format: { type: 'json_object' },
+          };
+          const res = await fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          const parsed = JSON.parse(data.choices[0].message.content);
+          setAiAnalysis(parsed);
+        } catch {
+          setAiAnalysis({ narrative: 'Analysis unavailable.', recommendations: [] });
+        } finally {
+          setAiLoading(false);
+        }
+      }, [adPeriod]);
+
+      useEffect(() => { load(); setAiAnalysis(null); }, [load]);
 
       const saveSpend = async (e) => {
         e.stopPropagation();
@@ -4521,6 +4569,42 @@
                 {overallRoas && <span><strong style={{ color: parseFloat(overallRoas) >= 3 ? '#16A34A' : '#CA8A04' }}>ROAS: {overallRoas}x</strong></span>}
                 {roi !== null && <span><strong style={{ color: parseFloat(roi) >= 0 ? '#16A34A' : '#DC2626' }}>ROI: {roi}%</strong></span>}
               </div>
+            )}
+          </div>
+
+          {/* AI Campaign Analysis */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h3 style={{ margin: 0 }}>AI Campaign Analysis</h3>
+              <button className="btn" onClick={() => fetchAiAnalysis(rows)}
+                disabled={aiLoading || rows.length === 0}
+                style={{ fontSize: 12.5, padding: '4px 12px' }}>
+                {aiLoading ? 'Analyzing\u2026' : 'Refresh Analysis'}
+              </button>
+            </div>
+            {rows.length === 0 ? (
+              <p style={{ color: 'var(--text-3)', fontSize: 13, margin: 0 }}>No campaign data for this period.</p>
+            ) : aiLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[120, 80, 60].map(w => (
+                  <div key={w} style={{ height: 14, width: `${w}%`, maxWidth: w * 8, background: 'var(--surface-alt)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
+                ))}
+              </div>
+            ) : aiAnalysis ? (
+              <div>
+                <p style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.6, marginBottom: 12 }}>{aiAnalysis.narrative}</p>
+                {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+                  <ul style={{ paddingLeft: 20, margin: 0 }}>
+                    {aiAnalysis.recommendations.map((r, i) => (
+                      <li key={i} style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 6 }}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
+                Click "Refresh Analysis" to generate AI insights for this period's campaigns.
+              </p>
             )}
           </div>
 
