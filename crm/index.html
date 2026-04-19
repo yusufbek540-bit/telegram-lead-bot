@@ -3817,7 +3817,7 @@
         const res = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'gpt-4o-mini', messages, tools: CRM_TOOLS, tool_choice: 'auto' }),
+          body: JSON.stringify({ model: 'gpt-5.4-mini-2026-03-17', messages, tools: CRM_TOOLS, tool_choice: 'auto' }),
         });
         if (!res.ok) throw new Error(`AI error ${res.status}: ${await res.text()}`);
         const data = await res.json();
@@ -4043,7 +4043,7 @@
             roas: r.roas,
           }));
           const body = {
-            model: 'gpt-4o-mini',
+            model: 'gpt-5.4-mini-2026-03-17',
             messages: [
               {
                 role: 'system',
@@ -5047,12 +5047,14 @@
       const [taskAssignee, setTaskAssignee] = useState('');
       const [taskDue, setTaskDue] = useState('');
       const [taskSaving, setTaskSaving] = useState(false);
+      const [activeLeads, setActiveLeads] = useState([]);
+      const [taskLeadId, setTaskLeadId] = useState('');
 
       const load = useCallback(async () => {
         setLoading(true);
         try {
           const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
-          const [tmRes, metricsRes, idleRes, tasksRes] = await Promise.all([
+          const [tmRes, metricsRes, idleRes, tasksRes, leadsRes] = await Promise.all([
             supabase.from('team_members').select('*').order('name'),
             supabase.from('v_team_metrics').select('*'),
             supabase.from('leads').select('telegram_id, name, username, assigned_to, status, last_activity_at, created_at')
@@ -5060,11 +5062,13 @@
               .not('status', 'in', '(converted,lost)')
               .order('last_activity_at', { ascending: true, nullsFirst: true }),
             supabase.from('tasks').select('*, leads(name)').order('due_date', { ascending: true }),
+            supabase.from('leads').select('telegram_id, name, username').not('status', 'in', '(converted,lost)').order('name', { ascending: true }),
           ]);
           setTeamMembers(tmRes.data || []);
           setTeamMetrics(metricsRes.data || []);
           setIdleLeads(idleRes.data || []);
           setTasks(tasksRes.data || []);
+          setActiveLeads(leadsRes.data || []);
         } catch (e) {
           showToast('Failed to load team data: ' + e.message, 'error');
         } finally {
@@ -5100,7 +5104,7 @@
             <>
               {subTab === 'performance' && <TeamPerformanceTab metrics={teamMetrics} sortCol={sortCol} sortDir={sortDir} setSortCol={setSortCol} setSortDir={setSortDir} />}
               {subTab === 'idle' && <TeamIdleLeadsTab leads={idleLeads} onOpenLead={onOpenLead} />}
-              {subTab === 'tasks' && <TeamTasksTab tasks={tasks} teamMembers={teamMembers} taskTitle={taskTitle} setTaskTitle={setTaskTitle} taskAssignee={taskAssignee} setTaskAssignee={setTaskAssignee} taskDue={taskDue} setTaskDue={setTaskDue} taskSaving={taskSaving} setTaskSaving={setTaskSaving} showToast={showToast} reload={load} />}
+              {subTab === 'tasks' && <TeamTasksTab tasks={tasks} teamMembers={teamMembers} activeLeads={activeLeads} taskTitle={taskTitle} setTaskTitle={setTaskTitle} taskAssignee={taskAssignee} setTaskAssignee={setTaskAssignee} taskDue={taskDue} setTaskDue={setTaskDue} taskLeadId={taskLeadId} setTaskLeadId={setTaskLeadId} taskSaving={taskSaving} setTaskSaving={setTaskSaving} showToast={showToast} reload={load} />}
             </>
           )}
         </div>
@@ -5188,7 +5192,7 @@
       );
     }
 
-    function TeamTasksTab({ tasks, teamMembers, taskTitle, setTaskTitle, taskAssignee, setTaskAssignee, taskDue, setTaskDue, taskSaving, setTaskSaving, showToast, reload }) {
+    function TeamTasksTab({ tasks, teamMembers, activeLeads, taskTitle, setTaskTitle, taskAssignee, setTaskAssignee, taskDue, setTaskDue, taskLeadId, setTaskLeadId, taskSaving, setTaskSaving, showToast, reload }) {
       const createTask = async () => {
         if (!taskTitle.trim()) { showToast('Title is required', 'error'); return; }
         setTaskSaving(true);
@@ -5197,13 +5201,14 @@
             title: taskTitle.trim(),
             assigned_to: taskAssignee || null,
             due_date: taskDue || null,
+            telegram_id: taskLeadId ? parseInt(taskLeadId) : null,
             status: 'open',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
           const { error } = await supabase.from('tasks').insert(payload);
           if (error) throw error;
-          setTaskTitle(''); setTaskAssignee(''); setTaskDue('');
+          setTaskTitle(''); setTaskAssignee(''); setTaskDue(''); setTaskLeadId('');
           showToast('Task created', 'success');
           reload();
         } catch (e) {
@@ -5262,6 +5267,18 @@
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase' }}>Due Date</label>
                 <input type="date" value={taskDue} onChange={e => setTaskDue(e.target.value)}
                   style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ flex: '0 1 200px' }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase' }}>Lead (optional)</label>
+                <select value={taskLeadId} onChange={e => setTaskLeadId(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 13, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', boxSizing: 'border-box' }}>
+                  <option value="">No lead</option>
+                  {activeLeads.map(l => (
+                    <option key={l.telegram_id} value={l.telegram_id}>
+                      {l.name || l.username || `#${l.telegram_id}`}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button className="btn btn-primary" onClick={createTask} disabled={taskSaving}
                 style={{ padding: '8px 20px', alignSelf: 'flex-end' }}>
