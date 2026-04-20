@@ -85,7 +85,7 @@ async def cmd_start(message: Message, command: CommandObject):
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                     InlineKeyboardButton(
                         text=btn_text,
-                        web_app=WebAppInfo(url=config.TWA_URL)
+                        web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}")
                     )
                 ]])
             )
