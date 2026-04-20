@@ -67,6 +67,57 @@ async def handle_web_app_data(message: Message):
             except Exception:
                 pass
 
+    elif action == "questionnaire_complete":
+        twa_lang = data.get("lang", "uz")
+        if twa_lang not in ("uz", "ru"):
+            twa_lang = "uz"
+
+        updates: dict = {"preferred_lang": twa_lang}
+        if data.get("business_type"):
+            updates["business_type"] = data["business_type"]
+        if data.get("service_interest"):
+            updates["service_interest"] = data["service_interest"]
+        if data.get("current_marketing"):
+            updates["current_marketing"] = data["current_marketing"]
+        if data.get("budget_range"):
+            updates["budget_range"] = data["budget_range"]
+        if data.get("phone"):
+            updates["phone"] = data["phone"]
+        if data.get("name"):
+            updates["first_name"] = data["name"]
+
+        import datetime
+        now = datetime.datetime.now(config.tz).isoformat()
+        updates.update({
+            "questionnaire_completed": True,
+            "questionnaire_completed_at": now,
+            "questionnaire_step": 6,
+        })
+
+        await db.update_lead(user.id, **updates)
+        await db.track_event(user.id, "twa_questionnaire_complete", {
+            "business_type": data.get("business_type"),
+            "services": data.get("service_interest"),
+        })
+        await db.recalculate_score(user.id)
+
+        from bot.handlers.questionnaire import _notify_admins_qualified
+        updated_lead = await db.get_lead(user.id)
+        if updated_lead:
+            await _notify_admins_qualified(message.bot, updated_lead)
+
+        if twa_lang == "ru":
+            confirm = "✅ Спасибо! Мы скоро свяжемся с вами."
+        else:
+            confirm = "✅ Rahmat! Tez orada bog'lanamiz."
+
+        await message.answer(confirm)
+        await message.answer(
+            t("welcome", twa_lang, agency_name=config.AGENCY_NAME),
+            reply_markup=main_menu_keyboard(twa_lang),
+            parse_mode="HTML",
+        )
+
     elif action == "twa_opened":
         await db.track_event(user.id, "twa_open", {})
 
