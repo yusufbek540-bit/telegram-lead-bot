@@ -79,9 +79,8 @@ async def cmd_start(message: Message, command: CommandObject):
                 twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'ting — 1 daqiqa."
                 btn_text = "So'rovnomani boshlash →"
 
-            await message.answer(twa_msg)
             await message.answer(
-                "↓",
+                twa_msg,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                     InlineKeyboardButton(
                         text=btn_text,
