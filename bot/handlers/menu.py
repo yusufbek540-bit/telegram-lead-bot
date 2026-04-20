@@ -5,7 +5,7 @@ Services, FAQ, About, Language, Callback Request.
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from bot.config import config
 from bot.texts import t
@@ -148,9 +148,23 @@ async def cb_set_lang(callback: CallbackQuery):
     q_done = lead.get("questionnaire_completed") if lead else False
 
     if not q_done:
-        await safe_edit(callback, t("lang_switched", lang), parse_mode="HTML")
-        from bot.handlers.questionnaire import start_questionnaire
-        await start_questionnaire(callback.message, lang, user_id=callback.from_user.id)
+        if lang == "ru":
+            twa_msg = "👋 Добро пожаловать! Пройдите короткий опрос — займёт 1 минуту. Подберём оптимальное решение для вашего бизнеса."
+            btn_text = "Начать опрос →"
+        else:
+            twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'ting — 1 daqiqa vaqt oladi. Biznesingiz uchun eng yaxshi yechimni topamiz."
+            btn_text = "So'rovnomani boshlash →"
+
+        await safe_edit(callback, twa_msg)
+        await callback.message.answer(
+            "↓",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text=btn_text,
+                    web_app=WebAppInfo(url=config.TWA_URL)
+                )
+            ]])
+        )
     else:
         await safe_edit(
             callback,
