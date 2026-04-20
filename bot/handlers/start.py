@@ -70,15 +70,25 @@ async def cmd_start(message: Message, command: CommandObject):
             await notify_admins_new_lead(message, user, source, assigned)
     else:
         lang = existing_lead["preferred_lang"]
-        # Check if questionnaire incomplete — resume it
-        q_step = existing_lead.get("questionnaire_step") or 0
         q_done = existing_lead.get("questionnaire_completed")
-        if not q_done and q_step > 0 and q_step < 6:
-            from bot.handlers.questionnaire import resume_questionnaire
-            await resume_questionnaire(message, lang, q_step)
-        elif not q_done:
-            from bot.handlers.questionnaire import start_questionnaire
-            await start_questionnaire(message, lang)
+        if not q_done:
+            if lang == "ru":
+                twa_msg = "👋 Добро пожаловать! Пройдите короткий опрос — займёт 1 минуту."
+                btn_text = "Начать опрос →"
+            else:
+                twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'ting — 1 daqiqa."
+                btn_text = "So'rovnomani boshlash →"
+
+            await message.answer(twa_msg)
+            await message.answer(
+                "↓",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                    InlineKeyboardButton(
+                        text=btn_text,
+                        web_app=WebAppInfo(url=config.TWA_URL)
+                    )
+                ]])
+            )
         else:
             await message.answer(
                 t("welcome", lang, agency_name=config.AGENCY_NAME),
