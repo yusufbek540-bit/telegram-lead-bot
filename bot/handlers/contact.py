@@ -58,25 +58,15 @@ async def handle_contact(message: Message):
     # Get language
     lead = await db.get_lead(user.id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
-
-    # Check if this phone share is part of Q5
-    q_step = lead.get("questionnaire_step") if lead else 0
-    q_done = lead.get("questionnaire_completed") if lead else False
-
-    if q_step == 5 and not q_done:
-        await db.track_event(user.id, "questionnaire_q5_answered", {"phone_shared": True})
-        from bot.handlers.questionnaire import complete_questionnaire
-        await complete_questionnaire(user.id, message, lang)
-    else:
-        await message.answer(
-            t("contact_received", lang),
-            reply_markup=remove_keyboard(),
-        )
-        await message.answer(
-            t("welcome", lang, agency_name=config.AGENCY_NAME),
-            reply_markup=main_menu_keyboard(lang),
-            parse_mode="HTML",
-        )
+    await message.answer(
+        t("contact_received", lang),
+        reply_markup=remove_keyboard(),
+    )
+    await message.answer(
+        t("welcome", lang, agency_name=config.AGENCY_NAME),
+        reply_markup=main_menu_keyboard(lang),
+        parse_mode="HTML",
+    )
 
     # Notify admins about phone shared
     name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "—"

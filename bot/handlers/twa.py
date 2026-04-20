@@ -106,17 +106,20 @@ async def handle_web_app_data(message: Message):
         if updated_lead:
             await _notify_admins_qualified(message.bot, updated_lead)
 
-        if twa_lang == "ru":
-            confirm = "✅ Спасибо! Мы скоро свяжемся с вами."
-        else:
-            confirm = "✅ Rahmat! Tez orada bog'lanamiz."
-
-        await message.answer(confirm)
-        await message.answer(
-            t("welcome", twa_lang, agency_name=config.AGENCY_NAME),
-            reply_markup=main_menu_keyboard(twa_lang),
-            parse_mode="HTML",
-        )
+        # If phone is already in DB the contact handler already sent welcome+menu
+        # (requestContact fires before sendData, so contact.py runs first).
+        # Only send here when user skipped contact sharing.
+        if not (updated_lead and updated_lead.get("phone")):
+            if twa_lang == "ru":
+                confirm = "✅ Спасибо! Мы скоро свяжемся с вами."
+            else:
+                confirm = "✅ Rahmat! Tez orada bog'lanamiz."
+            await message.answer(confirm)
+            await message.answer(
+                t("welcome", twa_lang, agency_name=config.AGENCY_NAME),
+                reply_markup=main_menu_keyboard(twa_lang),
+                parse_mode="HTML",
+            )
 
     elif action == "twa_opened":
         await db.track_event(user.id, "twa_open", {})
