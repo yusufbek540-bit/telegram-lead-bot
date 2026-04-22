@@ -134,3 +134,22 @@ async def handle_web_app_data(message: Message):
         await db.track_event(
             user.id, "twa_service_click", {"service": data.get("service", "")}
         )
+
+    elif action == "live_chat_request":
+        msg_text = data.get("message", "").strip()
+        if not msg_text:
+            return
+
+        await db.update_lead(user.id, live_chat=True)
+        await db.track_event(user.id, "live_chat_requested", {"source": "twa"})
+        await db.save_message(user.id, "user", msg_text, source="live_chat")
+
+        from bot.handlers.live_chat import _notify_managers
+        fresh_lead = await db.get_lead(user.id)
+        await _notify_managers(message.bot, fresh_lead, message_text=msg_text)
+
+        if lang == "ru":
+            confirm = "✅ Сообщение отправлено! Мы ответим в Telegram в ближайшее время."
+        else:
+            confirm = "✅ Xabaringiz yuborildi! Tez orada Telegram orqali javob beramiz."
+        await message.answer(confirm)
