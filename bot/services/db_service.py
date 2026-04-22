@@ -217,11 +217,12 @@ class DatabaseService:
 
     # ── CONVERSATIONS ──────────────────────────────────────────
 
-    async def save_message(self, telegram_id: int, role: str, message: str, is_sent: bool = True):
+    async def save_message(self, telegram_id: int, role: str, message: str,
+                           is_sent: bool = True, source: str = "ai_chat"):
         """Save a conversation message and update lead's last_activity_at."""
         # Unread logic: if user sends message, mark as unread (is_read=False)
         is_read = False if role == "user" else True
-        
+
         self.client.table("conversations").insert(
             {
                 "telegram_id": telegram_id,
@@ -229,6 +230,7 @@ class DatabaseService:
                 "message": message,
                 "is_sent": is_sent,
                 "is_read": is_read,
+                "source": source,
             }
         ).execute()
         # Update last_activity_at on every user message for stale detection
