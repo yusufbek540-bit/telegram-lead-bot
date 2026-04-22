@@ -6,7 +6,10 @@ two-way forwarding while the session is active.
 from html import escape
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import (
+    Message, CallbackQuery, ForceReply,
+    InlineKeyboardMarkup, InlineKeyboardButton,
+)
 
 from bot.config import config
 from bot.texts import t
@@ -14,6 +17,10 @@ from bot.services.db_service import db
 from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard
 
 router = Router()
+
+# Maps admin telegram_id → client telegram_id while a reply is in flight.
+# Single-instance bot only — in-memory is sufficient.
+active_replies: dict[int, int] = {}
 
 
 # ── USER: request live chat ────────────────────────────────────
@@ -37,6 +44,43 @@ async def cb_live_chat_request(callback: CallbackQuery):
 
     # Notify assigned manager or all admins
     await _notify_managers(callback.bot, lead, message_text=None)
+
+
+# ── ADMIN: tap Reply button on live-chat notification ─────────
+
+@router.callback_query(F.data.startswith("lr:"))
+async def cb_live_reply(callback: CallbackQuery):
+    client_id = int(callback.data.split(":")[1])
+    admin_id = callback.from_user.id
+
+    lead = await db.get_lead(client_id)
+    name = f"{lead.get('first_name') or ''} {lead.get('last_name') or ''}".strip() or "User"
+
+    active_replies[admin_id] = client_id
+
+    await callback.message.answer(
+        f"↩️ Replying to <b>{escape(name)}</b>. Type your message:",
+        parse_mode="HTML",
+        reply_markup=ForceReply(selective=True),
+    )
+    await callback.answer()
+
+
+# ── ADMIN: send reply text to client ──────────────────────────
+
+@router.message(F.text)
+async def handle_admin_reply(message: Message):
+    admin_id = message.from_user.id
+    client_id = active_replies.pop(admin_id, None)
+    if not client_id:
+        return  # Not in reply mode — let ai_chat handle it
+
+    await message.bot.send_message(client_id, message.text)
+    await db.save_message(client_id, "assistant", message.text, source="live_chat")
+
+    lead = await db.get_lead(client_id)
+    name = f"{lead.get('first_name') or ''} {lead.get('last_name') or ''}".strip() or "User"
+    await message.answer(f"✅ Sent to <b>{escape(name)}</b>", parse_mode="HTML")
 
 
 # ── USER: end chat ─────────────────────────────────────────────
@@ -87,9 +131,16 @@ async def _notify_managers(bot, lead: dict, message_text: str | None):
     if not target_ids:
         target_ids = list(config.ADMIN_IDS)
 
+    reply_kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text="💬 Reply",
+            callback_data=f"lr:{lead['telegram_id']}",
+        )
+    ]])
+
     for tid in target_ids:
         try:
-            await bot.send_message(tid, text, parse_mode="HTML")
+            await bot.send_message(tid, text, parse_mode="HTML", reply_markup=reply_kb)
         except Exception:
             pass
 
