@@ -2811,6 +2811,9 @@
                 {convo.length === 0 && <div className="empty">No messages yet. Type below to start.</div>}
                 {convo.map(m => (
                   <div key={m.id} className={`chat-bubble ${m.role === 'user' ? 'chat-user' : 'chat-assistant'} ${!m.is_sent ? 'pending' : ''}`} title={m.role === 'assistant' && !m.is_sent ? 'Pending delivery...' : ''}>
+                    {m.source === 'live_chat' && (
+                      <span style={{ fontSize: 10, opacity: 0.65, display: 'block', marginBottom: 2 }}>👤 Live</span>
+                    )}
                     {m.message}
                     {m.role === 'assistant' && !m.is_sent && <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 4 }}>⏳</span>}
                   </div>
