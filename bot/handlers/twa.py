@@ -39,6 +39,12 @@ async def handle_web_app_data(message: Message):
             update_data["phone"] = data["phone"]
         if data.get("email"):
             update_data["email"] = data["email"]
+        if data.get("name"):
+            lead = await db.get_lead(user.id)
+            if not (lead and lead.get("first_name")):
+                update_data["first_name"] = data["name"]
+        if data.get("interest"):
+            update_data["service_interest"] = [data["interest"]]
         if update_data:
             await db.update_lead(user.id, **update_data)
 
