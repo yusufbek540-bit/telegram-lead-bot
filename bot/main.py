@@ -53,6 +53,22 @@ async def main():
     # 8. AI chat (LAST — catches all remaining text messages)
     dp.include_router(ai_chat.router)
 
+    # Set the bot's menu button to open the TWA.
+    # sendData() only works when the mini app is opened via KeyboardButton or MenuButton —
+    # NOT from InlineKeyboardButton. Setting MenuButtonWebApp makes sendData available
+    # for all users who open the TWA from the blue menu button in the chat input area.
+    from aiogram.types import MenuButtonWebApp
+    try:
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="🌐 TWA",
+                web_app={"url": config.TWA_URL},
+            )
+        )
+        logger.info("Menu button set to TWA")
+    except Exception as e:
+        logger.warning(f"Could not set menu button: {e}")
+
     # Set bot commands (visible in Telegram menu)
     from aiogram.types import BotCommand, BotCommandScopeChat
 
