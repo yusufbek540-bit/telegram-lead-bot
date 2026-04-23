@@ -62,21 +62,31 @@ async def handle_contact(message: Message):
         parse_mode="HTML",
     )
 
-    # Notify admins about phone shared
-    name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "—"
-    score = lead.get("lead_score", 0) if lead else 0
-    source = lead.get("source", "—") if lead else "—"
-    text = t(
-        "admin_phone_shared",
-        "ru",
-        name=name,
-        username=user.username or "—",
-        phone=contact.phone_number,
-        source=source,
-        score=score,
+    # Notify admins about phone shared — but only when the phone share
+    # happens OUTSIDE an in-progress questionnaire. If the questionnaire is
+    # still running, the richer "qualified lead" notification will fire on
+    # completion and already contains the phone, so the phone-shared ping
+    # would just be noise.
+    questionnaire_in_progress = bool(
+        lead
+        and not lead.get("questionnaire_completed")
+        and (lead.get("questionnaire_step") or 0) > 0
     )
-    for admin_id in config.ADMIN_IDS:
-        try:
-            await message.bot.send_message(admin_id, text, parse_mode="HTML")
-        except Exception:
-            pass
+    if not questionnaire_in_progress:
+        name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "—"
+        score = lead.get("lead_score", 0) if lead else 0
+        source = lead.get("source", "—") if lead else "—"
+        text = t(
+            "admin_phone_shared",
+            "ru",
+            name=name,
+            username=user.username or "—",
+            phone=contact.phone_number,
+            source=source,
+            score=score,
+        )
+        for admin_id in config.ADMIN_IDS:
+            try:
+                await message.bot.send_message(admin_id, text, parse_mode="HTML")
+            except Exception:
+                pass
