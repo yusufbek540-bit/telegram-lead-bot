@@ -89,8 +89,8 @@ WITH week_bounds AS (
   SELECT
     (DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent')
       AT TIME ZONE 'Asia/Tashkent')::timestamptz AS week_start,
-    (DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent')
-      + INTERVAL '6 days 23:59:59'
+    ((DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Tashkent')
+      + INTERVAL '6 days 23:59:59')
       AT TIME ZONE 'Asia/Tashkent')::timestamptz AS week_end
 ),
 advances AS (

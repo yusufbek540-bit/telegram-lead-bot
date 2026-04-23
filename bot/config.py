@@ -18,7 +18,7 @@ class Config:
 
     # OpenAI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MODEL: str = "gpt-5.4-mini-2026-03-17"
     OPENAI_MAX_TOKENS: int = 600
 
     # Supabase

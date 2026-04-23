@@ -10,7 +10,7 @@ from aiogram.types import Message
 from bot.config import config
 from bot.texts import t
 from bot.services.db_service import db
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard, contact_keyboard, language_keyboard
 
 router = Router()
@@ -70,23 +70,28 @@ async def cmd_start(message: Message, command: CommandObject):
             await notify_admins_new_lead(message, user, source, assigned)
     else:
         lang = existing_lead["preferred_lang"]
-        q_done = existing_lead.get("questionnaire_completed")
+        q_done = (
+            existing_lead.get("questionnaire_completed")
+            or bool(existing_lead.get("phone"))
+            or (existing_lead.get("questionnaire_step") or 0) >= 6
+        )
         if not q_done:
             if lang == "ru":
-                twa_msg = "👋 Добро пожаловать! Пройдите короткий опрос — займёт 1 минуту."
-                btn_text = "Начать опрос →"
+                twa_msg = "👋 Добро пожаловать! Пройдите короткий опрос — 1 минута."
+                btn_text = "📝 Начать опрос"
             else:
                 twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'ting — 1 daqiqa."
-                btn_text = "So'rovnomani boshlash →"
-
+                btn_text = "📝 So'rovnomani boshlash"
             await message.answer(
                 twa_msg,
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                    InlineKeyboardButton(
+                reply_markup=ReplyKeyboardMarkup(
+                    keyboard=[[KeyboardButton(
                         text=btn_text,
                         web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}")
-                    )
-                ]])
+                    )]],
+                    resize_keyboard=True,
+                    one_time_keyboard=False,
+                ),
             )
         else:
             await message.answer(
@@ -123,31 +128,36 @@ async def cmd_faq(message: Message):
     await message.answer(t("faq", lang), reply_markup=back_to_menu_keyboard(lang), parse_mode="HTML")
 
 
-@router.message(Command("portfolio"))
+@router.message(Command("language", "lang"))
+async def cmd_language(message: Message):
+    await message.answer(t("choose_lang", "uz"), reply_markup=language_keyboard())
+
+
+@router.message(Command("app", "portfolio"))
 async def cmd_portfolio(message: Message):
     lead = await db.get_lead(message.from_user.id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
 
     if lang == "ru":
         lines = [
-            "🖼 <b>Наше портфолио</b>",
+            "✨ <b>MQSD App</b>",
             (
-                "Здесь собраны реальные проекты — SMM, AI-контент, автоматизация и продакшн.\n\n"
-                "Каждый кейс: задача → решение → результаты в цифрах."
+                "Внутри — услуги, кейсы, тарифы и прямой чат с менеджером.\n\n"
+                "SMM · AI-контент · автоматизация · продакшн — всё в одном приложении."
             ),
-            "Открывайте и смотрите 👇",
+            "Открывайте 👇",
         ]
-        btn_text = "🖼 Открыть портфолио"
+        btn_text = "✨ Открыть MQSD"
     else:
         lines = [
-            "🖼 <b>Bizning portfolio</b>",
+            "✨ <b>MQSD App</b>",
             (
-                "Bu yerda haqiqiy loyihalar — SMM, AI-kontent, avtomatizatsiya va prodakshn.\n\n"
-                "Har bir keys: vazifa → yechim → raqamlarda natija."
+                "Ichida — xizmatlar, keyslar, tariflar va menejer bilan to'g'ridan-to'g'ri chat.\n\n"
+                "SMM · AI-kontent · avtomatizatsiya · prodakshn — hammasi bir ilovada."
             ),
-            "Oching va ko'ring 👇",
+            "Oching 👇",
         ]
-        btn_text = "🖼 Portfolioni ochish"
+        btn_text = "✨ MQSD ni ochish"
 
     for i, text in enumerate(lines):
         is_last = i == len(lines) - 1

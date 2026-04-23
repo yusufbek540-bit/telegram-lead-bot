@@ -272,6 +272,10 @@ TEXTS = {
         "uz": "Oylik taxminiy byudjetingiz?",
         "ru": "Ваш примерный бюджет в месяц?",
     },
+    "q5_biz_text": {
+        "uz": "Biznesingiz nomi? (masalan: «Sharq Restoran» yoki «IT Academy»)",
+        "ru": "Как называется ваш бизнес? (например: «Восток Ресторан» или «IT Academy»)",
+    },
     "q5_text": {
         "uz": "Zo'r! Oxirgi qadam — jamoamiz siz bilan bog'lanishi uchun raqamingizni ulashing.",
         "ru": "Отлично! Последний шаг — поделитесь номером, чтобы команда могла связаться.",

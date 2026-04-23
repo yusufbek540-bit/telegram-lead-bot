@@ -53,19 +53,14 @@ async def main():
     # 8. AI chat (LAST — catches all remaining text messages)
     dp.include_router(ai_chat.router)
 
-    # Set the bot's menu button to open the TWA.
-    # sendData() only works when the mini app is opened via KeyboardButton or MenuButton —
-    # NOT from InlineKeyboardButton. Setting MenuButtonWebApp makes sendData available
-    # for all users who open the TWA from the blue menu button in the chat input area.
-    from aiogram.types import MenuButtonWebApp
+    # Restore default menu button so the bot's command list (/start, /portfolio, etc.)
+    # is visible. The TWA is launched instead via KeyboardButton/InlineKeyboardButton
+    # flows, and live-chat messaging goes through the /api/live-chat endpoint
+    # (bypasses sendData's launch-context restriction).
+    from aiogram.types import MenuButtonCommands
     try:
-        await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(
-                text="🌐 TWA",
-                web_app={"url": config.TWA_URL},
-            )
-        )
-        logger.info("Menu button set to TWA")
+        await bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+        logger.info("Menu button set to command list")
     except Exception as e:
         logger.warning(f"Could not set menu button: {e}")
 
@@ -76,16 +71,18 @@ async def main():
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Boshlash / Начать"),
-            BotCommand(command="portfolio", description="Portfolio / Портфолио"),
-            BotCommand(command="services", description="Xizmatlar / Услуги"),
-            BotCommand(command="faq", description="FAQ"),
+            BotCommand(command="app", description="MQSD App — xizmatlar va keyslar / услуги и кейсы"),
             BotCommand(command="contact", description="Bog'lanish / Контакт"),
+            BotCommand(command="language", description="Tilni o'zgartirish / Сменить язык"),
         ]
     )
 
     # Admin-only commands — shown only in each admin's private chat
     admin_commands = [
         BotCommand(command="start", description="Boshlash / Начать"),
+        BotCommand(command="app", description="MQSD App"),
+        BotCommand(command="contact", description="Контакт"),
+        BotCommand(command="language", description="Сменить язык"),
         BotCommand(command="crm", description="CRM Dashboard"),
         BotCommand(command="leads", description="Последние лиды"),
         BotCommand(command="stats", description="Статистика"),

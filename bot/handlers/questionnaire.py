@@ -143,6 +143,7 @@ async def _notify_admins_qualified(bot, lead):
     from html import escape
     name = escape(f"{lead.get('first_name') or ''} {lead.get('last_name') or ''}".strip() or "\u2014")
     username = escape(lead.get("username") or "\u2014")
+    biz_name = escape(lead.get("business_name") or "")
     biz = lead.get("business_type") or "\u2014"
     if biz == "other" and lead.get("business_type_other"):
         biz = escape(lead["business_type_other"])
@@ -157,7 +158,7 @@ async def _notify_admins_qualified(bot, lead):
     text = (
         "\U0001f4cb <b>Квалифицированный лид!</b>\n\n"
         f"\U0001f464 {name} (@{username})\n"
-        f"\U0001f3e2 {biz}\n"
+        f"\U0001f3e2 {biz}" + (f" — {biz_name}" if biz_name else "") + "\n"
         f"\U0001f4cb {services}\n"
         f"\U0001f4ca {marketing}\n"
         f"\U0001f4b0 {budget}\n"

@@ -3,9 +3,12 @@ AI Service — handles OpenAI API calls for the chat assistant.
 Supports bilingual UZ/RU responses based on user preference.
 """
 
+import logging
 from openai import AsyncOpenAI
 from pathlib import Path
 from bot.config import config
+
+logger = logging.getLogger(__name__)
 
 
 class AIService:
@@ -45,20 +48,23 @@ class AIService:
         """
         messages = [{"role": "system", "content": self._get_system_prompt(lang, user_info)}]
         for msg in conversation_history:
+            content = msg.get("message")
+            if not content:
+                continue  # skip empty/null rows — OpenAI 400s on empty content
             role = "assistant" if msg["role"] == "assistant" else "user"
-            messages.append({"role": role, "content": msg["message"]})
+            messages.append({"role": role, "content": content})
         messages.append({"role": "user", "content": user_message})
 
         try:
             response = await self.client.chat.completions.create(
                 model=config.OPENAI_MODEL,
                 messages=messages,
-                max_tokens=config.OPENAI_MAX_TOKENS,
+                max_completion_tokens=config.OPENAI_MAX_TOKENS,
             )
             return response.choices[0].message.content
 
         except Exception as e:
-            print(f"AI Service error: {e}")
+            logger.error("AI Service error: %s", e, exc_info=True)
             if lang == "ru":
                 return (
                     "Извините, произошла техническая ошибка. "

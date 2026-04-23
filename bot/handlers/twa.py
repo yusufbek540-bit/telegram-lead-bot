@@ -91,6 +91,8 @@ async def handle_web_app_data(message: Message):
             updates["phone"] = data["phone"]
         if data.get("name"):
             updates["first_name"] = data["name"]
+        if data.get("business_name"):
+            updates["business_name"] = data["business_name"]
 
         import datetime
         now = datetime.datetime.now(config.tz).isoformat()
@@ -112,15 +114,15 @@ async def handle_web_app_data(message: Message):
         if updated_lead:
             await _notify_admins_qualified(message.bot, updated_lead)
 
-        # If phone is already in DB the contact handler already sent welcome+menu
-        # (requestContact fires before sendData, so contact.py runs first).
-        # Only send here when user skipped contact sharing.
-        if not (updated_lead and updated_lead.get("phone")):
-            if twa_lang == "ru":
-                confirm = "✅ Спасибо! Мы скоро свяжемся с вами."
-            else:
-                confirm = "✅ Rahmat! Tez orada bog'lanamiz."
-            await message.answer(confirm)
+        # Contact flow:
+        # - If the user shared contact via TWA's native requestContact popup,
+        #   Telegram delivers a Contact message to the bot which contact.py
+        #   handles — it sends the welcome + main menu itself. Nothing to do here.
+        # - If the user skipped sharing and no phone is on file, we send the
+        #   welcome + main menu now so the user lands somewhere useful.
+        contact_shared = bool(data.get("contact_shared"))
+        has_phone = bool(updated_lead and updated_lead.get("phone"))
+        if not contact_shared and not has_phone:
             await message.answer(
                 t("welcome", twa_lang, agency_name=config.AGENCY_NAME),
                 reply_markup=main_menu_keyboard(twa_lang),

@@ -243,7 +243,7 @@ async def answer_crm_question(question: str) -> str:
 
     for _ in range(5):  # max 5 tool rounds
         response = await _client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini-2026-03-17",
             messages=messages,
             tools=_TOOLS,
             tool_choice="auto",

@@ -44,22 +44,18 @@ def main_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
     )
 
 
-def back_to_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
-    """Simple "back to menu" button shown after content."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=t("btn_back", lang), callback_data="main_menu"
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text=t("btn_callback", lang), callback_data="callback_request"
-                ),
-            ],
-        ]
-    )
+def back_to_menu_keyboard(lang: str = "uz", show_callback: bool = True) -> InlineKeyboardMarkup:
+    """Simple "back to menu" button shown after content.
+
+    show_callback: include the "Order a callback" CTA. Pass False when the user
+    has already shared their phone number — repeating the CTA is noise.
+    """
+    rows = [[InlineKeyboardButton(text=t("btn_back", lang), callback_data="main_menu")]]
+    if show_callback:
+        rows.append([
+            InlineKeyboardButton(text=t("btn_callback", lang), callback_data="callback_request")
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def contact_keyboard(lang: str = "uz") -> ReplyKeyboardMarkup:

@@ -3,6 +3,7 @@ from __future__ import annotations
 Live chat handler — lets users request a real manager and enables
 two-way forwarding while the session is active.
 """
+import logging
 from html import escape
 from aiogram import Router, F
 from aiogram.filters import Command
@@ -16,6 +17,7 @@ from bot.texts import t
 from bot.services.db_service import db
 from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 # Maps admin telegram_id → client telegram_id while a reply is in flight.
@@ -68,15 +70,22 @@ async def cb_live_reply(callback: CallbackQuery):
 
 # ── ADMIN: send reply text to client ──────────────────────────
 
-@router.message(F.text)
+@router.message(F.text, lambda m: m.from_user.id in active_replies)
 async def handle_admin_reply(message: Message):
     admin_id = message.from_user.id
     client_id = active_replies.pop(admin_id, None)
     if not client_id:
-        return  # Not in reply mode — let ai_chat handle it
+        return
 
+    logger.info("live_chat admin=%s → client=%s text=%r", admin_id, client_id, message.text[:80])
     await message.bot.send_message(client_id, message.text)
-    await db.save_message(client_id, "assistant", message.text, source="live_chat")
+    try:
+        await db.save_message(client_id, "assistant", message.text, source="live_chat")
+    except Exception as e:
+        logger.error("save_message failed for live_chat reply: %s", e, exc_info=True)
+    # Keep the client in live_chat mode so their next free-text reply in the
+    # bot routes to admins (via ai_chat.py's live_chat check) instead of AI.
+    await db.update_lead(client_id, live_chat=True)
 
     lead = await db.get_lead(client_id)
     name = f"{lead.get('first_name') or ''} {lead.get('last_name') or ''}".strip() or "User"

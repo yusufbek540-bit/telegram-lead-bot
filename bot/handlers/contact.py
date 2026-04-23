@@ -22,12 +22,6 @@ async def handle_contact(message: Message):
     contact = message.contact
     user = message.from_user
 
-    # Delete the shared contact message to keep chat clean
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     # Save phone number
     await db.update_lead_phone(
         telegram_id=user.id,

@@ -1180,27 +1180,45 @@
       questionnaire_start: '📋', questionnaire_complete: '✅',
     };
 
-    const BIZ_TYPES = ["Sotuv/Marketing", "Ishlab chiqarish", "Xizmat ko'rsatish", "IT/SaaS", "Boshqa"];
     const BUDGET_LABELS = {
-      "< $500": "< $500",
-      "$500 - $1500": "$500 - $1.5k",
-      "$1500 - $5000": "$1.5k - $5k",
-      "$5000+": "$5k+",
-      "Aniqlanmagan": "Any"
+      "1000_1500": "$1k – $1.5k",
+      "2000_3000": "$2k – $3k",
+      "3000_5000": "$3k – $5k",
+      "5000_plus": "$5k+"
     };
     const BUDGET_COLORS = {
-      "< $500": "#94a3b8",
-      "$500 - $1500": "#3b82f6",
-      "$1500 - $5000": "#8b5cf6",
-      "$5000+": "#16a34a",
-      "Aniqlanmagan": "#cbd5e1"
+      "1000_1500": "#94a3b8",
+      "2000_3000": "#3b82f6",
+      "3000_5000": "#8b5cf6",
+      "5000_plus": "#16a34a"
     };
     const BIZ_ICONS = {
-      "Sotuv/Marketing": "📈",
-      "Ishlab chiqarish": "🏭",
-      "Xizmat ko'rsatish": "🛠️",
-      "IT/SaaS": "💻",
-      "Boshqa": "🌐"
+      health: "🏥",
+      beauty: "🛍",
+      realestate: "🏠",
+      education: "📚",
+      auto: "🚗",
+      b2b: "🚀",
+      consulting: "💡",
+      ecommerce: "🛒",
+      fitness: "💪",
+      horeca: "🍽",
+      fmcg: "📦",
+      other: "⚡"
+    };
+    const BIZ_LABELS = {
+      health: "Health",
+      beauty: "Fashion / Retail",
+      realestate: "Real Estate",
+      education: "Education",
+      auto: "Auto",
+      b2b: "B2B / Startup",
+      consulting: "Consulting",
+      ecommerce: "Sales / E-com",
+      fitness: "Fitness",
+      horeca: "HoReCa",
+      fmcg: "FMCG",
+      other: "Other"
     };
 
     function fmtRevenue(val, currency) {
@@ -2477,9 +2495,9 @@
               <h3>Qualification</h3>
               <div className="field-row">
                 <span className="label">Business Type</span>
-                <span>{lead.business_type ? `${BIZ_ICONS[lead.business_type] || ''} ${lead.business_type}` : '—'}</span>
+                <span>{lead.business_type ? `${BIZ_ICONS[lead.business_type] || ''} ${BIZ_LABELS[lead.business_type] || lead.business_type}` : '—'}</span>
               </div>
-              {lead.business_type === 'Boshqa' && lead.business_type_other && (
+              {lead.business_type === 'other' && lead.business_type_other && (
                 <div className="field-row">
                   <span className="label">Custom Type</span>
                   <span>{lead.business_type_other}</span>
@@ -2500,7 +2518,7 @@
               </div>
               <div className="field-row">
                 <span className="label">Budget Range</span>
-                <span style={{ color: BUDGET_COLORS[lead.budget_range] || 'inherit', fontWeight: 600 }}>{lead.budget_range || '—'}</span>
+                <span style={{ color: BUDGET_COLORS[lead.budget_range] || 'inherit', fontWeight: 600 }}>{BUDGET_LABELS[lead.budget_range] || lead.budget_range || '—'}</span>
               </div>
               <div className="field-row">
                 <span className="label">Q. Progress</span>

@@ -4,12 +4,13 @@ This is registered LAST so buttons and commands take priority.
 """
 
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.config import config
 from bot.services.db_service import db
 from bot.services.ai_service import ai_service
 from bot.keyboards.main_menu import back_to_menu_keyboard
+from bot.texts import t
 
 router = Router()
 
@@ -97,9 +98,28 @@ async def handle_text_message(message: Message):
     if len(user_msgs) % 5 == 0:  # Every 5 messages
         await db.recalculate_score(user.id)
 
-    # Send response with back-to-menu button
+    # Append AI disclaimer + escalation CTA to every AI reply.
+    if lang == "ru":
+        disclaimer = (
+            "\n\n<i>🤖 Это сообщение от AI-бота. Нужен живой менеджер? "
+            "Нажмите кнопку ниже, чтобы открыть live-чат.</i>"
+        )
+        live_btn_text = "💬 Связаться с менеджером"
+    else:
+        disclaimer = (
+            "\n\n<i>🤖 Bu xabar AI-bot tomonidan yuborildi. Jonli menejer kerakmi? "
+            "Live-chatni ochish uchun quyidagi tugmani bosing.</i>"
+        )
+        live_btn_text = "💬 Menejer bilan bog'lanish"
+
+    has_phone = bool(lead and lead.get("phone"))
+    back_kb = back_to_menu_keyboard(lang, show_callback=not has_phone)
+    rows = [
+        [InlineKeyboardButton(text=live_btn_text, callback_data="live_chat_request")],
+        *back_kb.inline_keyboard,
+    ]
     await message.answer(
-        response,
-        reply_markup=back_to_menu_keyboard(lang),
+        response + disclaimer,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )

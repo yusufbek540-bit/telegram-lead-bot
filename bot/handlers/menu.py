@@ -5,7 +5,7 @@ Services, FAQ, About, Language, Callback Request.
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 
 from bot.config import config
 from bot.texts import t
@@ -149,21 +149,27 @@ async def cb_set_lang(callback: CallbackQuery):
 
     if not q_done:
         if lang == "ru":
-            twa_msg = "👋 Добро пожаловать! Пройдите короткий опрос — займёт 1 минуту. Подберём оптимальное решение для вашего бизнеса."
-            btn_text = "Начать опрос →"
+            twa_msg = "👋 Добро пожаловать! Нажмите кнопку ниже, чтобы пройти короткий опрос — 1 минута."
+            btn_text = "📝 Начать опрос"
         else:
-            twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'ting — 1 daqiqa vaqt oladi. Biznesingiz uchun eng yaxshi yechimni topamiz."
-            btn_text = "So'rovnomani boshlash →"
-
-        await safe_edit(
-            callback,
+            twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'tish uchun pastdagi tugmani bosing — 1 daqiqa."
+            btn_text = "📝 So'rovnomani boshlash"
+        try:
+            await callback.message.edit_text(
+                "🇺🇿 O'zbekcha" if lang == "uz" else "🇷🇺 Русский"
+            )
+        except Exception:
+            pass
+        await callback.message.answer(
             twa_msg,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(
                     text=btn_text,
                     web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}")
-                )
-            ]])
+                )]],
+                resize_keyboard=True,
+                one_time_keyboard=False,
+            ),
         )
     else:
         await safe_edit(

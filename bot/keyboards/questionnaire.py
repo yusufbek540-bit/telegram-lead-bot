@@ -12,19 +12,25 @@ from bot.texts import t
 
 
 BUSINESS_TYPES = [
-    ("q_biz_restaurant", {"uz": "🍽 Restoran / Kafe", "ru": "🍽 Ресторан / Кафе"}),
-    ("q_biz_beauty", {"uz": "💇 Go'zallik / Klinika", "ru": "💇 Красота / Клиника"}),
+    ("q_biz_health", {"uz": "🏥 Salomatlik / Klinika", "ru": "🏥 Здоровье / Клиника"}),
+    ("q_biz_beauty", {"uz": "🛍 Fashion / Retail", "ru": "🛍 Fashion / Retail"}),
+    ("q_biz_realestate", {"uz": "🏠 Ko'chmas mulk", "ru": "🏠 Недвижимость"}),
     ("q_biz_education", {"uz": "📚 Ta'lim / Kurslar", "ru": "📚 Образование / Курсы"}),
-    ("q_biz_it", {"uz": "💻 IT / Startap", "ru": "💻 IT / Стартап"}),
-    ("q_biz_ecommerce", {"uz": "🛒 Onlayn do'kon", "ru": "🛒 Онлайн-магазин"}),
+    ("q_biz_auto", {"uz": "🚗 Avto / Dilerlik", "ru": "🚗 Авто / Дилерство"}),
+    ("q_biz_b2b", {"uz": "🚀 B2B / Startap", "ru": "🚀 B2B / Стартап"}),
+    ("q_biz_consulting", {"uz": "💡 Konsalting / Kouching", "ru": "💡 Консалтинг / Коучинг"}),
+    ("q_biz_ecommerce", {"uz": "🛒 Savdo / E-com", "ru": "🛒 Продажи / E-com"}),
+    ("q_biz_fitness", {"uz": "💪 Fitnes", "ru": "💪 Фитнес"}),
+    ("q_biz_horeca", {"uz": "🍽 HoReCa / Restoran", "ru": "🍽 HoReCa / Ресторан"}),
+    ("q_biz_fmcg", {"uz": "📦 FMCG mahsulotlar", "ru": "📦 FMCG продукты"}),
     ("q_biz_other", {"uz": "📝 Boshqa", "ru": "📝 Другое"}),
 ]
 
 SERVICES = [
     ("q_svc_smm", {"uz": "📱 SMM boshqaruvi", "ru": "📱 Ведение SMM"}),
-    ("q_svc_targeting", {"uz": "🎯 Targetlangan reklama", "ru": "🎯 Таргетированная реклама"}),
+    ("q_svc_targeting", {"uz": "🎯 Targeting", "ru": "🎯 Таргетинг"}),
     ("q_svc_website", {"uz": "🌐 Veb-sayt", "ru": "🌐 Сайт"}),
-    ("q_svc_bot", {"uz": "🤖 Telegram / Insta bot", "ru": "🤖 Telegram / Insta бот"}),
+    ("q_svc_bot", {"uz": "🤖 TG / Insta bot", "ru": "🤖 TG / Insta бот"}),
     ("q_svc_ai", {"uz": "🧠 AI avtomatizatsiya", "ru": "🧠 AI автоматизация"}),
     ("q_svc_branding", {"uz": "🎨 Brending", "ru": "🎨 Брендинг"}),
     ("q_svc_consulting", {"uz": "💡 Maslahat kerak", "ru": "💡 Нужна консультация"}),
@@ -43,11 +49,10 @@ MARKETING_STATUS = [
 ]
 
 BUDGETS = [
-    ("q_budget_200_500", {"uz": "💵 $200 — $500", "ru": "💵 $200 — $500"}),
-    ("q_budget_500_1000", {"uz": "💰 $500 — $1 000", "ru": "💰 $500 — $1 000"}),
-    ("q_budget_1000_3000", {"uz": "🏦 $1 000 — $3 000", "ru": "🏦 $1 000 — $3 000"}),
-    ("q_budget_3000", {"uz": "💎 $3 000+", "ru": "💎 $3 000+"}),
-    ("q_budget_unknown", {"uz": "🤷 Hali aniq emas", "ru": "🤷 Ещё не определился"}),
+    ("q_budget_1000_1500", {"uz": "💵 $1 000 — $1 500", "ru": "💵 $1 000 — $1 500"}),
+    ("q_budget_2000_3000", {"uz": "💰 $2 000 — $3 000", "ru": "💰 $2 000 — $3 000"}),
+    ("q_budget_3000_5000", {"uz": "🏦 $3 000 — $5 000", "ru": "🏦 $3 000 — $5 000"}),
+    ("q_budget_5000_plus", {"uz": "💎 $5 000+", "ru": "💎 $5 000+"}),
 ]
 
 
