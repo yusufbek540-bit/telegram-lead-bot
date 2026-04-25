@@ -174,7 +174,95 @@ In `OB_T` dictionary and slide labels:
 | Done-screen CTA: (close button) | Add: "Выбрать время" → opens schedule tab |
 | Hero subtitle / about page mentions of "audit" as deliverable | Reframe to "стратегическая сессия" |
 
-### 6.5 Existing contact paths in TWA
+### 6.5 Brand alignment — full TWA static copy rewrite
+
+The TWA still carries the legacy "AI marketing for everyone" copy across hero, services, about, and footer. This task brings every static surface in line with the new MQSD positioning.
+
+**Hard rules applied everywhere:**
+- Zero mentions of "AI", "AI-powered", "AI-кейсы", "GPT", or any model self-id
+- No "для всех бизнесов" / "со всеми работаем" framing
+- Three named verticals only: real-estate developers, private clinics, education/coaching
+- Formal RU вы, no emoji theatre, "Bепло, по делу" tone
+- Service ladder: Free Strategy Session → System Build → Self-Drive vs Co-Pilot
+
+**Sections to rewrite in `twa/index.html`:**
+
+1. **Hero** — three-layer stack:
+   - Hook: `"Performance-маркетинг, который окупается с первого месяца."`
+   - Promise: `"Строим систему за дни. Запускаем — приводит лиды. Управляем — закрываем сделки."`
+   - Proof: `"От рекламы до продажи — одна команда отвечает за выручку."`
+   - CTA: "Записаться на стратегическую сессию"
+
+2. **Services / "Что делаем"** — replace existing AI-heavy service tiles with the ladder + scope:
+   - Tile 1: "Стратегическая сессия + аудит — бесплатно"
+   - Tile 2: "Построение системы за 5–10 рабочих дней"
+   - Tile 3: "Управление трафиком и контентом"
+   - Tile 4: "Лид-менеджмент и CRM до сделки"
+
+3. **About / "О нас"** — strategic sales-system partner identity:
+   - Lead: `"Мы не агентство. Мы внешний performance-департамент — отвечаем за выручку, не за охваты."`
+   - Body covers: ownership of full funnel (content → ads → leads → sales), вертикальная специализация, KPI-привязанные обязательства.
+
+4. **Vertical chips / industry section** — show only the three active verticals with one-liners for each. Drop the 12-vertical legacy chip strip.
+
+5. **Footer / contact** — replace any "позвоните / напишите менеджеру" with single CTA block leading to schedule tab.
+
+UZ static text stays as-is (deprioritized); RU is the source of truth.
+
+### 6.6 Methodology section (replaces cases / portfolio)
+
+Cases / portfolio section in current TWA is removed and replaced with a **"Как мы работаем"** section that positions MQSD as performance marketing experts owning the entire sales funnel — content → ads → leads → sales. Detailed enough to substitute for the trust signals a cases section would normally carry.
+
+**Section header:**
+- Title: `"Как мы работаем"`
+- Subtitle: `"Полный цикл performance-маркетинга — от первого касания до закрытой сделки. Одна команда отвечает за результат."`
+
+**Four stages, each as a separate card/block:**
+
+**Stage 1 — Стратегия и диагностика**
+- Lede: `"30-минутная стратегическая сессия — бесплатно. Разбираем бизнес, аудируем воронку, согласовываем KPI."`
+- Bullet points:
+  - Аудит текущей воронки: где утекают лиды, где переплачиваете за трафик, где ломается продажа
+  - Стратегия: сегмент, оффер, каналы, метрики
+  - Бриф системы: что строим, сроки, KPI на 30 / 60 / 90 дней
+- Deliverable: `"Документ-бриф + согласованный KPI"`
+
+**Stage 2 — Построение системы**
+- Lede: `"Дни, а не месяцы. Пока конкуренты согласовывают ТЗ, ваша система уже принимает лидов."`
+- Bullet points:
+  - **Контент-движок** — посты, рилсы, видео, рекламные креативы. Месячный план + продакшн.
+  - **Рекламная инфраструктура** — Meta Ads, Google Ads, Telegram Ads. Аккаунты, пиксели, события, аудитории.
+  - **Воронка захвата** — лендинг или Telegram-бот. Квалификация на входе.
+  - **CRM-сцепка** — лиды сразу в вашу или нашу систему, с тегами и статусами.
+  - **Автоматизация** — напоминания, follow-up'ы, сегментация, retargeting.
+- Deliverable: `"Работающая система за 5–10 рабочих дней — готова принимать трафик."`
+
+**Stage 3 — Запуск и трафик**
+- Lede: `"С первого дня — данные. Не «посмотрим через месяц». Каждый день — измерение, корректировка, новые гипотезы."`
+- Bullet points:
+  - **Платный трафик** — ежедневное управление: ставки, бюджеты, креативы, аудитории
+  - **Контент-производство** — еженедельный поток органики и рекламных креативов
+  - **Еженедельные отчёты** — что сработало, что нет, куда идём дальше
+  - **A/B-тесты** — креативы, оферы, лендинги, текст в боте
+- Deliverable: `"Целевые лиды по согласованной цене, с предсказуемой динамикой."`
+
+**Stage 4 — Конверсия и масштаб**
+- Lede: `"Лиды без сделок — деньги в трубу. Мы не уходим, пока система не закрывает сделки."`
+- Bullet points:
+  - **Лид-менеджмент** — квалификация, скоринг, ранжирование. Менеджер получает только готовых клиентов.
+  - **CRM-сопровождение** — статусы, follow-up'ы, выявление узких мест в продажах
+  - **Поддержка отдела продаж** — скрипты, материалы, обучение менеджеров (Co-Pilot) или полное ведение (Full-Cycle)
+  - **Оптимизация** — ежемесячный пересмотр стратегии на основе данных по сделкам, не только по лидам
+  - **Масштабирование** — когда юнит-экономика подтверждена, увеличиваем бюджеты и каналы
+- Deliverable: `"Предсказуемый поток оплаченных сделок и готовый к масштабированию pipeline."`
+
+**Closing band (after the four stages):**
+- `"Мы не агентство. Мы внешний performance-департамент — отвечаем за выручку, не за охваты."`
+- CTA below: "Записаться на стратегическую сессию"
+
+**Layout note:** keep the visual structure from the current cases section (card grid / vertical timeline / whatever exists), just swap content. Do not introduce a new visual language.
+
+### 6.7 Existing contact paths in TWA
 
 Any existing "Связаться / запросить звонок" buttons inside the TWA point to schedule tab.
 
