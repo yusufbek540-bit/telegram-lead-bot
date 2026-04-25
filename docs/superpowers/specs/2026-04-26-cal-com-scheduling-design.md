@@ -180,9 +180,8 @@ The TWA still carries the legacy "AI marketing for everyone" copy across hero, s
 
 **Hard rules applied everywhere:**
 - Zero mentions of "AI", "AI-powered", "AI-кейсы", "GPT", or any model self-id
-- No "для всех бизнесов" / "со всеми работаем" framing
-- Three named verticals only: real-estate developers, private clinics, education/coaching
-- Formal RU вы, no emoji theatre, "Bепло, по делу" tone
+- No undifferentiated "для всех / со всеми работаем" framing — *but* the agency is **open to all niches**, with three priority verticals (real-estate developers, private clinics, education/coaching). Always frame the verticals as **priority focus**, not as exclusive scope. Other businesses are welcome — that case is decided on the strategy session.
+- Formal RU вы, no emoji theatre, "тепло, по делу" tone
 - Service ladder: Free Strategy Session → System Build → Self-Drive vs Co-Pilot
 
 **Sections to rewrite in `twa/index.html`:**
@@ -197,9 +196,9 @@ The TWA still carries the legacy "AI marketing for everyone" copy across hero, s
 
 3. **About / "О нас"** — strategic sales-system partner identity:
    - Lead: `"Мы не агентство. Мы внешний performance-департамент — отвечаем за выручку, не за охваты."`
-   - Body covers: ownership of full funnel (content → ads → leads → sales), вертикальная специализация, KPI-привязанные обязательства.
+   - Body covers: ownership of full funnel (content → ads → leads → sales), приоритетная экспертиза в недвижимости / медицине / образовании при открытости к другим нишам, KPI-привязанные обязательства.
 
-4. **Vertical chips / industry section** — show only the three active verticals with one-liners for each. Drop the 12-vertical legacy chip strip.
+4. **Vertical chips / industry section** — replace the 12-vertical legacy strip with a "приоритетные ниши" block that highlights the three priority verticals (real-estate developers, private clinics, education/coaching) with one-liners each, followed by a short closing line: `"Работаем и с другими нишами — обсудим, подходит ли подход вашему бизнесу, на стратегической сессии."` This keeps focus without closing the door.
 
 5. **Footer / contact** — replace any "позвоните / напишите менеджеру" with single CTA block leading to schedule tab.
 
@@ -231,7 +230,7 @@ Anchored at the top of the section, visually distinct from the others (e.g. diff
   - Рекомендации по 3 быстрым улучшениям
   - Бриф системы под ваш бизнес (если решите строить)
 - CTA: `"Забронировать аудит"` → opens TWA `?tab=schedule`
-- Fine print: `"Аудит бесплатен. Никаких обязательств. Только для бизнесов из недвижимости, медицины и образования."`
+- Fine print: `"Аудит бесплатен. Никаких обязательств. Приоритетно — недвижимость, частная медицина, образование. Открыты и к другим нишам, обсудим на сессии."`
 
 **Implementation note for the counter:**
 - For launch: hardcoded `6/10` in HTML. Can be edited manually as bookings come in.
