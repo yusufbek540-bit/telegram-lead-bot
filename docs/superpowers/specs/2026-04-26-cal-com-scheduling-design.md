@@ -81,9 +81,17 @@ create index if not exists bookings_scheduled_at_idx on bookings(scheduled_at);
 ```sql
 alter table leads add column if not exists booking_status text;       -- null | scheduled | cancelled | completed
 alter table leads add column if not exists next_session_at timestamptz;
+alter table leads add column if not exists website text;              -- intake: business website (optional)
+alter table leads add column if not exists social_handle text;        -- intake: any social platform handle (optional, free text)
 ```
 
 `booking_status` is denormalized for quick CRM filtering ("show me everyone with a session this week"). The `bookings` table is the source of truth; `leads.booking_status` mirrors the most recent booking's status.
+
+### 4.3 Semantic shift: `business_name` column
+
+The `business_name` column was being repurposed in the previous refactor to hold "top problem" free text. We are reverting it to its original semantic — the actual name of the business. The questionnaire's Q5 changes correspondingly (see §6.3 and §7.4).
+
+No data migration required. Existing rows where `business_name` holds top-problem text will be left as-is; the field will become correct from the next questionnaire submission onward. CRM admins can spot-clean outlier rows manually if needed.
 
 ## 5. Cal.com Configuration
 
@@ -136,7 +144,26 @@ Cal.ns.strategy("inline", {
 
 Existing TWA already has tab navigation. Add `?tab=schedule` URL param handling so the bot can deep-link directly to this tab.
 
-### 6.3 Copy reframe (drop "audit" packaging)
+### 6.3 Q5 intake fields (replaces top-problem text)
+
+Slide 5 of the TWA questionnaire changes from a single text input ("Опишите коротко вашу главную проблему") to three fields:
+
+| Field | Required | Persists to | Notes |
+|---|---|---|---|
+| Business name | **yes** | `leads.business_name` | "Next" disabled until ≥2 chars |
+| Website | no | `leads.website` | If present, light validation (must contain `.`) |
+| Social handle | no | `leads.social_handle` | Free text — accepts `@username`, `t.me/...`, full URL, etc. |
+
+Slide footer: "Next" enabled when business name is filled. "Skip" still skips to slide 6 (phone).
+
+OB_T copy updates:
+- `q5_title` → `"Расскажите о бизнесе"`
+- `q5_sub` → `"Это поможет нам подготовиться к встрече"`
+- New labels: `q5_biz_label`, `q5_biz_placeholder`, `q5_web_label`, `q5_web_placeholder`, `q5_social_label`, `q5_social_placeholder`
+
+`obSendData()` payload gains `website` and `social_handle` fields. The TWA handler in `bot/handlers/twa.py` writes these directly to the new `leads` columns (no normalization needed — they are free text).
+
+### 6.4 Copy reframe (drop "audit" packaging)
 
 In `OB_T` dictionary and slide labels:
 
@@ -147,7 +174,7 @@ In `OB_T` dictionary and slide labels:
 | Done-screen CTA: (close button) | Add: "Выбрать время" → opens schedule tab |
 | Hero subtitle / about page mentions of "audit" as deliverable | Reframe to "стратегическая сессия" |
 
-### 6.4 Existing contact paths in TWA
+### 6.5 Existing contact paths in TWA
 
 Any existing "Связаться / запросить звонок" buttons inside the TWA point to schedule tab.
 
@@ -169,6 +196,7 @@ Any existing "Связаться / запросить звонок" buttons insi
 
 `bot/handlers/questionnaire.py`:
 - `_notify_admins_qualified` header: `<b>Заявка на бесплатный аудит</b>` → `<b>Новая анкета — клиент готов к сессии</b>`
+- Update the admin notification body to surface the new intake fields: business name, website (or "—"), social handle (or "—") — replacing the "Top problem" line
 
 ### 7.2 CTA rewiring
 
@@ -191,7 +219,31 @@ Any existing "Связаться / запросить звонок" buttons insi
 
 **`/ask` admin command:** unchanged. Still uses `crm_ai.py`. Admin-only.
 
-### 7.3 What stays as-is
+### 7.3 Bot questionnaire Q5 changes
+
+`bot/handlers/questionnaire.py` step 5 currently expects a single free-text message ("top problem"). Change it to a three-step inline mini-flow within step 5:
+
+- **5a:** prompt for business name → store text → continue
+- **5b:** prompt for website with inline "Пропустить" button → store text or null → continue
+- **5c:** prompt for social handle with inline "Пропустить" button → store text or null → advance to step 6 (phone)
+
+Implementation pattern: keep `questionnaire_step=5` for all three sub-prompts; add a `questionnaire_substep` text column on `leads` (or use an existing unused field) to track 5a / 5b / 5c. Persist business name to `leads.business_name`, website to `leads.website`, social handle to `leads.social_handle`.
+
+`bot/keyboards/questionnaire.py`:
+- Remove `q5_skip_keyboard` (the old single skip-button for top-problem text)
+- Add `q5b_skip_keyboard` and `q5c_skip_keyboard` (inline "Пропустить" for website + social)
+
+`bot/texts.py` adds: `q5a_prompt`, `q5b_prompt`, `q5c_prompt`, `q5_biz_invalid` (for too-short input).
+
+### 7.4 Score recalculation update
+
+`bot/services/db_service.py:recalculate_score` currently scores `+10` if `business_name` (top-problem text) was provided. Change this to:
+- `+5` if `business_name` is set (intake completion)
+- `+5` if `website` is set (signal of an established business)
+
+Drop the "top-problem text provided" rationale since the field no longer carries that meaning.
+
+### 7.5 What stays as-is
 
 - Phone-share at questionnaire step 6: still happens, still triggers admin "qualified lead" notification. Phone is collected before scheduling because (a) it's in-flow already, (b) it's a backup contact if user bails before booking.
 - All admin commands (`/leads`, `/lead`, `/stats`, `/export`, `/ask`, `/jobs`, etc.)
