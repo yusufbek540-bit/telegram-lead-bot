@@ -1,6 +1,17 @@
 """
-Questionnaire handler — 5-question onboarding flow after /start + language selection.
-Uses database-driven state (questionnaire_step column) — no FSM, survives restarts.
+Free Audit qualification flow.
+
+Five audit-shaped questions, no phone step (phone is opt-in via the menu after).
+Database-driven state via leads.questionnaire_step — survives restarts.
+
+Step semantics:
+    1 = vertical                       (callback q_v_*)
+    2 = monthly ad spend               (callback q_spend_*)
+    3 = current channels (multi)       (callbacks q_ch_*, finalized by q_ch_done)
+    4 = CRM status                     (callback q_crm_*)
+    5 = top problem (free text)        (text message OR q_problem_skip)
+    6 = phone share                    (Contact OR "later" reply text)
+    7 = complete
 """
 
 import datetime
@@ -15,7 +26,8 @@ from bot.texts import t
 from bot.services.db_service import db
 from bot.keyboards.main_menu import main_menu_keyboard, remove_keyboard
 from bot.keyboards.questionnaire import (
-    q1_keyboard, q2_keyboard, q3_keyboard, q4_keyboard, q5_keyboard,
+    q1_keyboard, q2_keyboard, q3_keyboard, q4_keyboard,
+    q5_skip_keyboard, q6_phone_keyboard,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,21 +35,18 @@ router = Router()
 
 
 class QStepFilter(BaseFilter):
-    """Only match if lead is at the given questionnaire step with optional extra condition."""
-    def __init__(self, step: int, biz_type: str = None):
+    """Match only when the lead's questionnaire_step equals self.step."""
+    def __init__(self, step: int):
         self.step = step
-        self.biz_type = biz_type
 
     async def __call__(self, message: Message) -> bool:
         lead = await db.get_lead(message.from_user.id)
         if not lead or lead.get("questionnaire_step") != self.step:
             return False
-        if self.biz_type and lead.get("business_type") != self.biz_type:
-            return False
         return True
 
 
-# ── Helper: safe edit (suppress "message not modified") ──────────
+# ── Helpers ──────────────────────────────────────────────────────
 
 async def safe_edit(callback, text, reply_markup=None, parse_mode=None):
     try:
@@ -46,10 +55,7 @@ async def safe_edit(callback, text, reply_markup=None, parse_mode=None):
         pass
 
 
-# ── Show question helpers ────────────────────────────────────────
-
 async def show_q1(target, lang: str):
-    """Show Q1 — business type. target is Message or CallbackQuery."""
     text = t("q1_text", lang)
     kb = q1_keyboard(lang)
     if isinstance(target, CallbackQuery):
@@ -58,37 +64,33 @@ async def show_q1(target, lang: str):
         await target.answer(text, reply_markup=kb)
 
 
-async def show_q2(callback, lang: str, selected=None):
-    text = t("q2_text", lang)
-    kb = q2_keyboard(lang, selected or [])
-    await safe_edit(callback, text, reply_markup=kb)
+async def show_q2(callback, lang: str):
+    await safe_edit(callback, t("q2_text", lang), reply_markup=q2_keyboard(lang))
 
 
-async def show_q3(callback, lang: str):
-    text = t("q3_text", lang)
-    kb = q3_keyboard(lang)
-    await safe_edit(callback, text, reply_markup=kb)
+async def show_q3(callback, lang: str, selected=None):
+    await safe_edit(callback, t("q3_text", lang), reply_markup=q3_keyboard(lang, selected or []))
 
 
 async def show_q4(callback, lang: str):
-    text = t("q4_text", lang)
-    kb = q4_keyboard(lang)
-    await safe_edit(callback, text, reply_markup=kb)
+    await safe_edit(callback, t("q4_text", lang), reply_markup=q4_keyboard(lang))
 
 
-async def show_q5(message_or_callback, lang: str):
-    """Q5 uses ReplyKeyboard for phone share — must send new message."""
-    text = t("q5_text", lang)
-    kb = q5_keyboard(lang)
+async def show_q5(callback, lang: str):
+    """Q5 = top problem free text. Edit message + offer skip button."""
+    await safe_edit(callback, t("q5_text", lang), reply_markup=q5_skip_keyboard(lang))
+
+
+async def show_q6(message_or_callback, lang: str):
+    """Q6 = phone share. ReplyKeyboard requires a new message (can't edit)."""
     if isinstance(message_or_callback, CallbackQuery):
         msg = message_or_callback.message
     else:
         msg = message_or_callback
-    await msg.answer(text, reply_markup=kb)
+    await msg.answer(t("q6_text", lang), reply_markup=q6_phone_keyboard(lang))
 
 
 async def start_questionnaire(message: Message, lang: str, user_id: int = None):
-    """Entry point — show intro + Q1."""
     uid = user_id or message.from_user.id
     await message.answer(t("q_intro", lang))
     await db.update_lead(uid, questionnaire_step=1)
@@ -97,30 +99,30 @@ async def start_questionnaire(message: Message, lang: str, user_id: int = None):
 
 
 async def resume_questionnaire(message: Message, lang: str, step: int, user_id: int = None):
-    """Resume from where the lead left off."""
     uid = user_id or message.from_user.id
     if step <= 1:
         await message.answer(t("q1_text", lang), reply_markup=q1_keyboard(lang))
     elif step == 2:
-        lead = await db.get_lead(uid)
-        selected = lead.get("service_interest") or []
-        await message.answer(t("q2_text", lang), reply_markup=q2_keyboard(lang, selected))
+        await message.answer(t("q2_text", lang), reply_markup=q2_keyboard(lang))
     elif step == 3:
-        await message.answer(t("q3_text", lang), reply_markup=q3_keyboard(lang))
+        lead = await db.get_lead(uid)
+        selected = lead.get("service_interest") or [] if lead else []
+        await message.answer(t("q3_text", lang), reply_markup=q3_keyboard(lang, selected))
     elif step == 4:
         await message.answer(t("q4_text", lang), reply_markup=q4_keyboard(lang))
     elif step == 5:
-        await show_q5(message, lang)
+        await message.answer(t("q5_text", lang), reply_markup=q5_skip_keyboard(lang))
+    elif step == 6:
+        await message.answer(t("q6_text", lang), reply_markup=q6_phone_keyboard(lang))
 
 
 async def complete_questionnaire(telegram_id: int, message: Message, lang: str, bot=None):
-    """Mark questionnaire as complete, recalculate score, show menu."""
     now = datetime.datetime.now(config.tz).isoformat()
     await db.update_lead(
         telegram_id,
         questionnaire_completed=True,
         questionnaire_completed_at=now,
-        questionnaire_step=6,
+        questionnaire_step=7,
     )
     await db.track_event(telegram_id, "questionnaire_completed", {})
     await db.recalculate_score(telegram_id)
@@ -132,39 +134,67 @@ async def complete_questionnaire(telegram_id: int, message: Message, lang: str, 
         parse_mode="HTML",
     )
 
-    # Notify admins with rich summary
     the_bot = bot or message.bot
     lead = await db.get_lead(telegram_id)
     if lead:
         await _notify_admins_qualified(the_bot, lead)
 
 
+# ── Admin notification ──────────────────────────────────────────
+
+VERTICAL_LABELS = {
+    "q_v_realestate": "Жилая недвижимость / девелопмент",
+    "q_v_clinic": "Частная медицинская клиника",
+    "q_v_education": "Образование / коучинг",
+    "q_v_other": "Другое направление",
+}
+SPEND_LABELS = {
+    "q_spend_none": "Реклама пока не запущена",
+    "q_spend_lt1k": "До $1 000",
+    "q_spend_1k_3k": "$1 000 — $3 000",
+    "q_spend_3k_10k": "$3 000 — $10 000",
+    "q_spend_10k_plus": "$10 000+",
+}
+CHANNEL_LABELS = {
+    "meta": "Meta Ads",
+    "google": "Google Ads",
+    "telegram": "Telegram",
+    "organic": "Органический контент",
+    "offline": "Офлайн",
+    "none": "Ничего не работает",
+}
+CRM_LABELS = {
+    "q_crm_yes": "Полноценная CRM",
+    "q_crm_sheet": "Excel / Google Sheets",
+    "q_crm_no": "Учёта нет",
+}
+
+
 async def _notify_admins_qualified(bot, lead):
     from html import escape
-    name = escape(f"{lead.get('first_name') or ''} {lead.get('last_name') or ''}".strip() or "\u2014")
-    username = escape(lead.get("username") or "\u2014")
-    biz_name = escape(lead.get("business_name") or "")
-    biz = lead.get("business_type") or "\u2014"
-    if biz == "other" and lead.get("business_type_other"):
-        biz = escape(lead["business_type_other"])
-    services = ", ".join(lead.get("service_interest") or []) or "\u2014"
-    mkt_map = {"has_no_results": "Есть, нет результатов", "has_wants_scale": "Есть, хочет масштабировать", "no_marketing": "Нет, с нуля"}
-    marketing = mkt_map.get(lead.get("current_marketing"), "\u2014")
-    budget = lead.get("budget_range") or "\u2014"
-    phone = lead.get("phone") or "\u2014"
-    source = lead.get("source") or "organic"
+    name = escape(f"{lead.get('first_name') or ''} {lead.get('last_name') or ''}".strip() or "—")
+    username = escape(lead.get("username") or "—")
+    vertical = VERTICAL_LABELS.get(lead.get("business_type"), "—")
+    spend = SPEND_LABELS.get(lead.get("budget_range"), "—")
+    channels_raw = lead.get("service_interest") or []
+    channels = ", ".join(CHANNEL_LABELS.get(c, c) for c in channels_raw) or "—"
+    crm = CRM_LABELS.get(lead.get("current_marketing"), "—")
+    problem = escape(lead.get("business_name") or "—")
+    phone = lead.get("phone") or "—"
+    source = escape(lead.get("source") or "organic")
     score = lead.get("lead_score") or 0
 
     text = (
-        "\U0001f4cb <b>Квалифицированный лид!</b>\n\n"
-        f"\U0001f464 {name} (@{username})\n"
-        f"\U0001f3e2 {biz}" + (f" — {biz_name}" if biz_name else "") + "\n"
-        f"\U0001f4cb {services}\n"
-        f"\U0001f4ca {marketing}\n"
-        f"\U0001f4b0 {budget}\n"
-        f"\U0001f4f1 {phone}\n"
-        f"\U0001f4ca Источник: {escape(source)}\n"
-        f"\u2b50 Score: {score}"
+        "<b>Заявка на бесплатный аудит</b>\n\n"
+        f"Имя: <b>{name}</b> (@{username})\n"
+        f"Направление: {escape(vertical)}\n"
+        f"Бюджет на рекламу: {escape(spend)}\n"
+        f"Каналы: {escape(channels)}\n"
+        f"CRM: {escape(crm)}\n"
+        f"Главная задача: {problem}\n"
+        f"Телефон: {phone}\n"
+        f"Источник: {source}\n"
+        f"Баллы: {score}"
     )
 
     for admin_id in config.ADMIN_IDS:
@@ -174,113 +204,117 @@ async def _notify_admins_qualified(bot, lead):
             logger.error(f"Failed to notify admin {admin_id}: {e}")
 
 
-# ── Q1: Business Type ────────────────────────────────────────────
+# ── Q1: Vertical ────────────────────────────────────────────────
 
-@router.callback_query(F.data.startswith("q_biz_"))
-async def handle_business_type(callback: CallbackQuery):
-    biz_type = callback.data.replace("q_biz_", "")
+@router.callback_query(F.data.startswith("q_v_"))
+async def handle_vertical(callback: CallbackQuery):
     user_id = callback.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
 
-    await db.update_lead(user_id, business_type=biz_type)
-    await db.track_event(user_id, "questionnaire_q1_answered", {"business_type": biz_type})
-
-    if biz_type == "other":
-        await safe_edit(callback, t("q1_other_text", lang))
-        await callback.answer()
-        return
-
-    await db.update_lead(user_id, questionnaire_step=2)
+    await db.update_lead(user_id, business_type=callback.data, questionnaire_step=2)
+    await db.track_event(user_id, "questionnaire_q1_answered", {"vertical": callback.data})
     await show_q2(callback, lang)
     await callback.answer()
 
 
-# ── Q1 "Other": free text input ─────────────────────────────────
+# ── Q2: Ad spend ───────────────────────────────────────────────
 
-@router.message(F.text, QStepFilter(step=1, biz_type="other"))
-async def handle_other_text(message: Message):
-    """Catch free text when waiting for 'other' business type."""
-    user_id = message.from_user.id
+@router.callback_query(F.data.startswith("q_spend_"))
+async def handle_spend(callback: CallbackQuery):
+    user_id = callback.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
 
-    await db.update_lead(user_id, business_type_other=message.text.strip(), questionnaire_step=2)
-    await db.track_event(user_id, "questionnaire_q1_answered", {"business_type": "other", "other_text": message.text.strip()})
+    await db.update_lead(user_id, budget_range=callback.data, questionnaire_step=3)
+    await db.track_event(user_id, "questionnaire_q2_answered", {"ad_spend": callback.data})
+    await show_q3(callback, lang)
+    await callback.answer()
 
-    await message.answer(t("q2_text", lang), reply_markup=q2_keyboard(lang))
 
+# ── Q3: Channels (multi-select) ────────────────────────────────
 
-# ── Q2: Service Interest (multi-select) ─────────────────────────
-
-@router.callback_query(F.data.startswith("q_svc_") & ~F.data.in_({"q_svc_done"}))
-async def handle_service_toggle(callback: CallbackQuery):
-    svc_key = callback.data.replace("q_svc_", "")
+@router.callback_query(F.data.startswith("q_ch_") & ~F.data.in_({"q_ch_done"}))
+async def handle_channel_toggle(callback: CallbackQuery):
+    ch_key = callback.data.replace("q_ch_", "")
     user_id = callback.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
     selected = list(lead.get("service_interest") or []) if lead else []
 
-    if svc_key in selected:
-        selected.remove(svc_key)
+    if ch_key in selected:
+        selected.remove(ch_key)
     else:
-        selected.append(svc_key)
+        selected.append(ch_key)
 
     await db.update_lead(user_id, service_interest=selected)
-    await show_q2(callback, lang, selected)
+    await show_q3(callback, lang, selected)
     await callback.answer()
 
 
-@router.callback_query(F.data == "q_svc_done")
-async def handle_service_done(callback: CallbackQuery):
+@router.callback_query(F.data == "q_ch_done")
+async def handle_channels_done(callback: CallbackQuery):
     user_id = callback.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
     selected = lead.get("service_interest") or []
 
-    await db.track_event(user_id, "questionnaire_q2_answered", {"services": selected})
-    await db.update_lead(user_id, questionnaire_step=3)
-    await show_q3(callback, lang)
-    await callback.answer()
-
-
-# ── Q3: Current Marketing Status ─────────────────────────────────
-
-@router.callback_query(F.data.startswith("q_mkt_"))
-async def handle_marketing_status(callback: CallbackQuery):
-    mkt_key = callback.data.replace("q_mkt_", "")
-    user_id = callback.from_user.id
-    lead = await db.get_lead(user_id)
-    lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
-
-    await db.update_lead(user_id, current_marketing=mkt_key, questionnaire_step=4)
-    await db.track_event(user_id, "questionnaire_q3_answered", {"current_marketing": mkt_key})
+    await db.track_event(user_id, "questionnaire_q3_answered", {"channels": selected})
+    await db.update_lead(user_id, questionnaire_step=4)
     await show_q4(callback, lang)
     await callback.answer()
 
 
-# ── Q4: Budget Range ─────────────────────────────────────────────
+# ── Q4: CRM status ─────────────────────────────────────────────
 
-@router.callback_query(F.data.startswith("q_budget_"))
-async def handle_budget(callback: CallbackQuery):
-    budget_key = callback.data.replace("q_budget_", "")
+@router.callback_query(F.data.startswith("q_crm_"))
+async def handle_crm(callback: CallbackQuery):
     user_id = callback.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
 
-    await db.update_lead(user_id, budget_range=budget_key, questionnaire_step=5)
-    await db.track_event(user_id, "questionnaire_q4_answered", {"budget_range": budget_key})
+    await db.update_lead(user_id, current_marketing=callback.data, questionnaire_step=5)
+    await db.track_event(user_id, "questionnaire_q4_answered", {"crm": callback.data})
     await show_q5(callback, lang)
     await callback.answer()
 
 
-# ── Q5: Phone skip via text button ──────────────────────────────
+# ── Q5: Top problem (free text) ────────────────────────────────
 
-@router.message(F.text.regexp(r"^(\u23ed|Keyinroq|Позже)"), QStepFilter(step=5))
+@router.message(F.text, QStepFilter(step=5))
+async def handle_top_problem(message: Message):
+    user_id = message.from_user.id
+    lead = await db.get_lead(user_id)
+    lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
+
+    problem = (message.text or "").strip()[:500]
+    await db.update_lead(user_id, business_name=problem, questionnaire_step=6)
+    await db.track_event(user_id, "questionnaire_q5_answered", {"has_text": bool(problem)})
+    await show_q6(message, lang)
+
+
+@router.callback_query(F.data == "q_problem_skip")
+async def handle_problem_skip(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    lead = await db.get_lead(user_id)
+    lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
+
+    await db.update_lead(user_id, questionnaire_step=6)
+    await db.track_event(user_id, "questionnaire_q5_answered", {"skipped": True})
+    await safe_edit(callback, t("q_problem_skipped", lang))
+    await callback.answer()
+    await show_q6(callback, lang)
+
+
+# ── Q6: Phone share — "later" skip ─────────────────────────────
+# Phone Contact itself is captured by handlers/contact.py; that handler will
+# call complete_questionnaire(...) when it sees questionnaire_step == 6.
+
+@router.message(F.text.regexp(r"^(⏭|Keyinroq|Позже)"), QStepFilter(step=6))
 async def handle_phone_skip(message: Message):
     user_id = message.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
 
-    await db.track_event(user_id, "questionnaire_q5_answered", {"phone_skipped": True})
+    await db.track_event(user_id, "questionnaire_q6_answered", {"phone_skipped": True})
     await complete_questionnaire(user_id, message, lang)

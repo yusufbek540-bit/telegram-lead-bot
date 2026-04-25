@@ -340,30 +340,39 @@ class DatabaseService:
         if lead.get("questionnaire_completed"):
             score += 15
 
-        # Budget signals
-        budget = lead.get("budget_range", "")
-        if budget == "3000":
+        # Audit signal: monthly ad spend (budget_range column)
+        spend = lead.get("budget_range", "")
+        if spend == "q_spend_10k_plus":
+            score += 25
+        elif spend == "q_spend_3k_10k":
             score += 20
-        elif budget == "1000_3000":
-            score += 15
-        elif budget == "500_1000":
+        elif spend == "q_spend_1k_3k":
             score += 10
-        elif budget == "200_500":
+        elif spend == "q_spend_lt1k":
             score += 5
 
-        # Service interest breadth
-        services = lead.get("service_interest") or []
-        if len(services) >= 3:
+        # Audit signal: vertical match (active outbound = higher fit)
+        vertical = lead.get("business_type", "")
+        if vertical in ("q_v_realestate", "q_v_clinic", "q_v_education"):
             score += 10
-        elif len(services) >= 2:
+
+        # Audit signal: number of active channels (service_interest column)
+        channels = lead.get("service_interest") or []
+        if len(channels) >= 3:
+            score += 10
+        elif len(channels) >= 2:
             score += 5
 
-        # Marketing status signals
-        marketing = lead.get("current_marketing", "")
-        if marketing == "has_wants_scale":
+        # Audit signal: CRM maturity (current_marketing column)
+        crm = lead.get("current_marketing", "")
+        if crm == "q_crm_yes":
             score += 10
-        elif marketing == "has_no_results":
+        elif crm == "q_crm_sheet":
             score += 5
+
+        # Audit signal: provided a top problem text
+        if (lead.get("business_name") or "").strip():
+            score += 10
 
         await self.update_lead(telegram_id, lead_score=score)
         return score

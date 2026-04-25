@@ -1,115 +1,106 @@
 """
-Questionnaire keyboard layouts.
+Free Audit qualification flow keyboards.
+
+Maps to existing DB columns (no migration):
+- business_type        → vertical
+- budget_range         → monthly ad-spend tier
+- service_interest[]   → currently-running channels (multi-select)
+- current_marketing    → CRM status
+- business_name        → top problem (free text, captured at Q5)
+
+UZ labels still legacy until follow-up pass; RU is the source of truth.
 """
 
 from aiogram.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    ReplyKeyboardMarkup,
-    KeyboardButton,
+    InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton,
 )
 from bot.texts import t
 
 
-BUSINESS_TYPES = [
-    ("q_biz_health", {"uz": "🏥 Salomatlik / Klinika", "ru": "🏥 Здоровье / Клиника"}),
-    ("q_biz_beauty", {"uz": "🛍 Fashion / Retail", "ru": "🛍 Fashion / Retail"}),
-    ("q_biz_realestate", {"uz": "🏠 Ko'chmas mulk", "ru": "🏠 Недвижимость"}),
-    ("q_biz_education", {"uz": "📚 Ta'lim / Kurslar", "ru": "📚 Образование / Курсы"}),
-    ("q_biz_auto", {"uz": "🚗 Avto / Dilerlik", "ru": "🚗 Авто / Дилерство"}),
-    ("q_biz_b2b", {"uz": "🚀 B2B / Startap", "ru": "🚀 B2B / Стартап"}),
-    ("q_biz_consulting", {"uz": "💡 Konsalting / Kouching", "ru": "💡 Консалтинг / Коучинг"}),
-    ("q_biz_ecommerce", {"uz": "🛒 Savdo / E-com", "ru": "🛒 Продажи / E-com"}),
-    ("q_biz_fitness", {"uz": "💪 Fitnes", "ru": "💪 Фитнес"}),
-    ("q_biz_horeca", {"uz": "🍽 HoReCa / Restoran", "ru": "🍽 HoReCa / Ресторан"}),
-    ("q_biz_fmcg", {"uz": "📦 FMCG mahsulotlar", "ru": "📦 FMCG продукты"}),
-    ("q_biz_other", {"uz": "📝 Boshqa", "ru": "📝 Другое"}),
+# ── Q1: Vertical ───────────────────────────────────────────────
+# Active outbound verticals per MQSD positioning. "other" is allowed
+# but routed inbound only — we still capture them.
+VERTICALS = [
+    ("q_v_realestate", {"uz": "Ko'chmas mulk (devlopment)", "ru": "Жилая недвижимость / девелопмент"}),
+    ("q_v_clinic", {"uz": "Xususiy klinika", "ru": "Частная медицинская клиника"}),
+    ("q_v_education", {"uz": "Ta'lim / kouching", "ru": "Образование / коучинг"}),
+    ("q_v_other", {"uz": "Boshqa yo'nalish", "ru": "Другое направление"}),
 ]
 
-SERVICES = [
-    ("q_svc_smm", {"uz": "📱 SMM boshqaruvi", "ru": "📱 Ведение SMM"}),
-    ("q_svc_targeting", {"uz": "🎯 Targeting", "ru": "🎯 Таргетинг"}),
-    ("q_svc_website", {"uz": "🌐 Veb-sayt", "ru": "🌐 Сайт"}),
-    ("q_svc_bot", {"uz": "🤖 TG / Insta bot", "ru": "🤖 TG / Insta бот"}),
-    ("q_svc_ai", {"uz": "🧠 AI avtomatizatsiya", "ru": "🧠 AI автоматизация"}),
-    ("q_svc_branding", {"uz": "🎨 Brending", "ru": "🎨 Брендинг"}),
-    ("q_svc_consulting", {"uz": "💡 Maslahat kerak", "ru": "💡 Нужна консультация"}),
-]
-SERVICES_PAIRED = [
-    ("q_svc_smm", "q_svc_targeting"),
-    ("q_svc_website", "q_svc_bot"),
-    ("q_svc_ai", "q_svc_branding"),
-]
-SERVICES_SOLO = ["q_svc_consulting"]
-
-MARKETING_STATUS = [
-    ("q_mkt_has_no_results", {"uz": "😐 Ha, lekin natija yo'q", "ru": "😐 Да, но нет результатов"}),
-    ("q_mkt_has_wants_scale", {"uz": "📈 Ha, kengaytirmoqchiman", "ru": "📈 Да, хочу масштабировать"}),
-    ("q_mkt_none", {"uz": "🆕 Yo'q, noldan", "ru": "🆕 Нет, с нуля"}),
+# ── Q2: Monthly ad spend ──────────────────────────────────────
+AD_SPENDS = [
+    ("q_spend_none", {"uz": "Hali reklama qilmaymiz", "ru": "Пока не запускаем рекламу"}),
+    ("q_spend_lt1k", {"uz": "$1 000 gacha", "ru": "До $1 000"}),
+    ("q_spend_1k_3k", {"uz": "$1 000 — $3 000", "ru": "$1 000 — $3 000"}),
+    ("q_spend_3k_10k", {"uz": "$3 000 — $10 000", "ru": "$3 000 — $10 000"}),
+    ("q_spend_10k_plus", {"uz": "$10 000+", "ru": "$10 000+"}),
 ]
 
-BUDGETS = [
-    ("q_budget_1000_1500", {"uz": "💵 $1 000 — $1 500", "ru": "💵 $1 000 — $1 500"}),
-    ("q_budget_2000_3000", {"uz": "💰 $2 000 — $3 000", "ru": "💰 $2 000 — $3 000"}),
-    ("q_budget_3000_5000", {"uz": "🏦 $3 000 — $5 000", "ru": "🏦 $3 000 — $5 000"}),
-    ("q_budget_5000_plus", {"uz": "💎 $5 000+", "ru": "💎 $5 000+"}),
+# ── Q3: Current channels (multi-select) ───────────────────────
+CHANNELS = [
+    ("q_ch_meta", {"uz": "Instagram / Facebook reklama", "ru": "Реклама Instagram / Facebook"}),
+    ("q_ch_google", {"uz": "Google Ads", "ru": "Google Ads"}),
+    ("q_ch_telegram", {"uz": "Telegram (kanal/reklama)", "ru": "Telegram (канал/реклама)"}),
+    ("q_ch_organic", {"uz": "Organik kontent / SMM", "ru": "Органический контент / SMM"}),
+    ("q_ch_offline", {"uz": "Offline (bilbord, agentlar)", "ru": "Офлайн (билборды, агенты)"}),
+    ("q_ch_none", {"uz": "Hozircha hech narsa", "ru": "Пока ничего не работает"}),
 ]
+
+# ── Q4: CRM status ────────────────────────────────────────────
+CRM_STATUS = [
+    ("q_crm_yes", {"uz": "Ha, to'liq CRM ishlaydi", "ru": "Да, полноценная CRM"}),
+    ("q_crm_sheet", {"uz": "Excel/Google Sheets", "ru": "Excel / Google Sheets"}),
+    ("q_crm_no", {"uz": "Yo'q, hech narsa yo'q", "ru": "Нет, ничего не ведём"}),
+]
+
+
+def _grid(items, lang: str, cols: int = 1) -> InlineKeyboardMarkup:
+    rows = []
+    for i in range(0, len(items), cols):
+        row = [InlineKeyboardButton(text=labels[lang], callback_data=cb)
+               for cb, labels in items[i:i+cols]]
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def q1_keyboard(lang: str) -> InlineKeyboardMarkup:
-    rows = []
-    for i in range(0, len(BUSINESS_TYPES), 2):
-        row = []
-        for cb, labels in BUSINESS_TYPES[i:i+2]:
-            row.append(InlineKeyboardButton(text=labels[lang], callback_data=cb))
-        rows.append(row)
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+    return _grid(VERTICALS, lang, cols=1)
 
 
-def q2_keyboard(lang: str, selected: list = None) -> InlineKeyboardMarkup:
+def q2_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return _grid(AD_SPENDS, lang, cols=1)
+
+
+def q3_keyboard(lang: str, selected: list = None) -> InlineKeyboardMarkup:
     selected = selected or []
-    svc_map = {cb: labels for cb, labels in SERVICES}
     rows = []
-    for pair in SERVICES_PAIRED:
-        row = []
-        for cb in pair:
-            labels = svc_map[cb]
-            svc_key = cb.replace("q_svc_", "")
-            prefix = "\u2705 " if svc_key in selected else ""
-            row.append(InlineKeyboardButton(text=prefix + labels[lang], callback_data=cb))
-        rows.append(row)
-    for cb in SERVICES_SOLO:
-        labels = svc_map[cb]
-        svc_key = cb.replace("q_svc_", "")
-        prefix = "\u2705 " if svc_key in selected else ""
+    for cb, labels in CHANNELS:
+        ch_key = cb.replace("q_ch_", "")
+        prefix = "✓ " if ch_key in selected else ""
         rows.append([InlineKeyboardButton(text=prefix + labels[lang], callback_data=cb)])
     if selected:
-        rows.append([InlineKeyboardButton(text=t("q_continue", lang) + " \u2192", callback_data="q_svc_done")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def q3_keyboard(lang: str) -> InlineKeyboardMarkup:
-    rows = []
-    for cb, labels in MARKETING_STATUS:
-        rows.append([InlineKeyboardButton(text=labels[lang], callback_data=cb)])
+        rows.append([InlineKeyboardButton(text=t("q_continue", lang) + " →", callback_data="q_ch_done")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def q4_keyboard(lang: str) -> InlineKeyboardMarkup:
-    rows = []
-    for i in range(0, len(BUDGETS), 2):
-        row = []
-        for cb, labels in BUDGETS[i:i+2]:
-            row.append(InlineKeyboardButton(text=labels[lang], callback_data=cb))
-        rows.append(row)
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+    return _grid(CRM_STATUS, lang, cols=1)
 
 
-def q5_keyboard(lang: str) -> ReplyKeyboardMarkup:
+def q5_skip_keyboard(lang: str) -> InlineKeyboardMarkup:
+    """Q5 is free text; offer a single 'skip' inline button."""
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text=t("q_skip_later", lang), callback_data="q_problem_skip"),
+    ]])
+
+
+def q6_phone_keyboard(lang: str) -> ReplyKeyboardMarkup:
+    """Q6: phone share (request_contact) + 'later' skip button."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📱 " + t("btn_share_phone", lang).replace("📱 ", ""), request_contact=True)],
-            [KeyboardButton(text="\u23ed " + t("q_skip_later", lang))],
+            [KeyboardButton(text="⏭ " + t("q_skip_later", lang))],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,

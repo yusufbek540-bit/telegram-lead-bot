@@ -48,9 +48,9 @@ async def main():
     dp.include_router(twa.router)
     # 6. Menu button callbacks
     dp.include_router(menu.router)
-    # 7. Live chat — must be before ai_chat to intercept messages when active
+    # 7. Live chat — must be before partner-handoff to intercept active sessions
     dp.include_router(live_chat.router)
-    # 8. AI chat (LAST — catches all remaining text messages)
+    # 8. Partner-handoff catch-all (LAST — any unmatched text goes to a manager)
     dp.include_router(ai_chat.router)
 
     # Restore default menu button so the bot's command list (/start, /portfolio, etc.)
@@ -89,7 +89,7 @@ async def main():
         BotCommand(command="export", description="Экспорт CSV"),
         BotCommand(command="broadcast", description="Рассылка"),
         BotCommand(command="jobs", description="Статус планировщика"),
-        BotCommand(command="ask", description="Спросить AI о лидах"),
+        BotCommand(command="ask", description="Запрос к CRM (внутр.)"),
     ]
     for admin_id in config.ADMIN_IDS:
         try:

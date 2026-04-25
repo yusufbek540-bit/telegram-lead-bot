@@ -73,15 +73,21 @@ async def cmd_start(message: Message, command: CommandObject):
         q_done = (
             existing_lead.get("questionnaire_completed")
             or bool(existing_lead.get("phone"))
-            or (existing_lead.get("questionnaire_step") or 0) >= 6
+            or (existing_lead.get("questionnaire_step") or 0) >= 7
         )
         if not q_done:
             if lang == "ru":
-                twa_msg = "👋 Добро пожаловать! Пройдите короткий опрос — 1 минута."
-                btn_text = "📝 Начать опрос"
+                twa_msg = (
+                    "Чтобы подготовить ваш бесплатный аудит, ответьте "
+                    "на 5 коротких вопросов — около минуты."
+                )
+                btn_text = "Запросить бесплатный аудит"
             else:
-                twa_msg = "👋 Xush kelibsiz! Qisqa so'rovnomadan o'ting — 1 daqiqa."
-                btn_text = "📝 So'rovnomani boshlash"
+                twa_msg = (
+                    "Bepul auditni tayyorlashimiz uchun 5 ta qisqa savolga "
+                    "javob bering — taxminan 1 daqiqa."
+                )
+                btn_text = "Bepul auditni so'rash"
             await message.answer(
                 twa_msg,
                 reply_markup=ReplyKeyboardMarkup(

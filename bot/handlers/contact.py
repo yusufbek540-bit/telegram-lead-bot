@@ -52,6 +52,22 @@ async def handle_contact(message: Message):
     # Get language
     lead = await db.get_lead(user.id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
+
+    # If phone arrived as the final questionnaire step, complete the flow:
+    # the qualified-lead admin notification + welcome menu both happen there.
+    if (
+        lead
+        and not lead.get("questionnaire_completed")
+        and (lead.get("questionnaire_step") or 0) == 6
+    ):
+        from bot.handlers.questionnaire import complete_questionnaire
+        await message.answer(
+            t("contact_received", lang),
+            reply_markup=remove_keyboard(),
+        )
+        await complete_questionnaire(user.id, message, lang)
+        return
+
     await message.answer(
         t("contact_received", lang),
         reply_markup=remove_keyboard(),
