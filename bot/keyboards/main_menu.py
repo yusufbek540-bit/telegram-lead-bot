@@ -25,19 +25,16 @@ def main_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text=t("btn_services", lang), callback_data="services"
+                    text=t("btn_services", lang),
+                    web_app=WebAppInfo(url=config.TWA_URL),
                 ),
                 InlineKeyboardButton(
-                    text=t("btn_portfolio", lang),
-                    web_app=WebAppInfo(url=config.TWA_URL),
+                    text=t("btn_live_chat", lang), callback_data="live_chat_request"
                 ),
             ],
             [
                 InlineKeyboardButton(
                     text=t("btn_lang", lang), callback_data="change_lang"
-                ),
-                InlineKeyboardButton(
-                    text=t("btn_live_chat", lang), callback_data="live_chat_request"
                 ),
             ],
         ]
