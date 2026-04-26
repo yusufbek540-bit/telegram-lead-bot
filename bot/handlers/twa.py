@@ -184,8 +184,11 @@ async def handle_web_app_data(message: Message):
         if data.get("name"):
             updates["first_name"] = data["name"]
         if data.get("business_name"):
-            # business_name now carries the top-problem text (audit-shape).
             updates["business_name"] = data["business_name"]
+        if data.get("website"):
+            updates["website"] = data["website"]
+        if data.get("social_handle"):
+            updates["social_handle"] = data["social_handle"]
 
         import datetime
         now = datetime.datetime.now(config.tz).isoformat()
