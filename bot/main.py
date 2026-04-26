@@ -14,7 +14,7 @@ from aiogram.client.default import DefaultBotProperties
 from bot.config import config
 
 # Import all routers
-from bot.handlers import start, questionnaire, menu, contact, ai_chat, admin, twa, live_chat, booking_reminder
+from bot.handlers import start, questionnaire, menu, contact, ai_chat, admin, twa, live_chat, booking_reminder, sessions
 from bot.services.scheduler_service import create_scheduler
 
 
@@ -52,6 +52,8 @@ async def main():
     dp.include_router(live_chat.router)
     # 7.5 Booking reminder callbacks (bk_confirm/bk_cancel/bk_resched)
     dp.include_router(booking_reminder.router)
+    # 7.6 /sessions command + my_sessions callback (user-facing booking list)
+    dp.include_router(sessions.router)
     # 8. Partner-handoff catch-all (LAST — any unmatched text goes to a manager)
     dp.include_router(ai_chat.router)
 
@@ -75,6 +77,7 @@ async def main():
             BotCommand(command="start", description="Boshlash / Начать"),
             BotCommand(command="app", description="MQSD App — xizmatlar va keyslar / услуги и кейсы"),
             BotCommand(command="contact", description="Bog'lanish / Контакт"),
+            BotCommand(command="sessions", description="Mening sessiyalarim / Мои сессии"),
             BotCommand(command="language", description="Tilni o'zgartirish / Сменить язык"),
         ]
     )
@@ -84,6 +87,7 @@ async def main():
         BotCommand(command="start", description="Boshlash / Начать"),
         BotCommand(command="app", description="MQSD App"),
         BotCommand(command="contact", description="Контакт"),
+        BotCommand(command="sessions", description="Мои сессии"),
         BotCommand(command="language", description="Сменить язык"),
         BotCommand(command="crm", description="CRM Dashboard"),
         BotCommand(command="leads", description="Последние лиды"),

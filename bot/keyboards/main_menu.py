@@ -31,6 +31,11 @@ def main_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text=t("btn_my_sessions", lang), callback_data="my_sessions"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
                     text=t("btn_live_chat", lang), callback_data="live_chat_request"
                 ),
                 InlineKeyboardButton(

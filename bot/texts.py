@@ -357,6 +357,7 @@ TEXTS = {
     "btn_q_skip": {"uz": "Keyinroq", "ru": "Позже"},
     # ── BUTTONS ────────────────────────────────────────────
     "btn_services": {"uz": "📋 Xizmatlar", "ru": "📋 Услуги"},
+    "btn_my_sessions": {"uz": "🗓 Sessiyalarim", "ru": "🗓 Мои сессии"},
     "btn_portfolio": {"uz": "🖼 Portfolio", "ru": "🖼 Портфолио"},
     "btn_faq": {"uz": "❓ FAQ", "ru": "❓ FAQ"},
     "btn_about": {"uz": "ℹ️ Biz haqimizda", "ru": "ℹ️ О нас"},
