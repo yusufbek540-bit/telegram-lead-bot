@@ -11,7 +11,7 @@ from bot.config import config
 from bot.texts import t
 from bot.services.db_service import db
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
-from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard, contact_keyboard, language_keyboard
+from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard, language_keyboard
 
 router = Router()
 
@@ -78,16 +78,16 @@ async def cmd_start(message: Message, command: CommandObject):
         if not q_done:
             if lang == "ru":
                 twa_msg = (
-                    "Чтобы подготовить ваш бесплатный аудит, ответьте "
+                    "Чтобы мы подготовились к встрече, ответьте "
                     "на 5 коротких вопросов — около минуты."
                 )
-                btn_text = "Запросить бесплатный аудит"
+                btn_text = "Пройти короткую анкету"
             else:
                 twa_msg = (
-                    "Bepul auditni tayyorlashimiz uchun 5 ta qisqa savolga "
+                    "Uchrashuvga tayyorlanishimiz uchun 5 ta qisqa savolga "
                     "javob bering — taxminan 1 daqiqa."
                 )
-                btn_text = "Bepul auditni so'rash"
+                btn_text = "Qisqa so'rovnomani o'tish"
             await message.answer(
                 twa_msg,
                 reply_markup=ReplyKeyboardMarkup(
@@ -111,11 +111,27 @@ async def cmd_start(message: Message, command: CommandObject):
 async def cmd_contact(message: Message):
     lead = await db.get_lead(message.from_user.id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
-    if lead and lead.get("phone"):
-        text = "✅ Sizning raqamingiz bizda bor. Tez orada qo'ng'iroq qilamiz!" if lang == "uz" else "✅ Ваш номер у нас уже есть. Мы перезвоним в ближайшее время!"
-        await message.answer(text, reply_markup=back_to_menu_keyboard(lang))
+    if lang == "ru":
+        text = (
+            "Чтобы обсудить ваш бизнес — выберите время для бесплатной "
+            "стратегической сессии (~30 минут). Откройте календарь ниже."
+        )
+        btn = "Выбрать время"
     else:
-        await message.answer(t("callback_request", lang), reply_markup=contact_keyboard(lang), parse_mode="HTML")
+        text = (
+            "Biznesingiz haqida gaplashish uchun — bepul strategik sessiya (~30 daqiqa) "
+            "uchun qulay vaqtni tanlang."
+        )
+        btn = "Vaqtni tanlash"
+    await message.answer(
+        text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text=btn,
+                web_app=WebAppInfo(url=f"{config.TWA_URL}?tab=schedule&lang={lang}"),
+            )
+        ]]),
+    )
 
 
 @router.message(Command("services"))

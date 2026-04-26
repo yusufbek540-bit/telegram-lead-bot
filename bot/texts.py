@@ -241,12 +241,13 @@ TEXTS = {
     },
     "partner_handoff_received": {
         "uz": (
-            "📨 Xabaringiz partnyorimizga yuborildi.\n\n"
-            "Javob 24 soat ichida, ish vaqtida — bevosita shu chatda."
+            "Vazifani muhokama qilish uchun bepul strategik sessiya uchun "
+            "qulay vaqtni tanlang — aynan o'sha vaqtda bog'lanamiz va biznesni tahlil qilamiz."
         ),
         "ru": (
-            "Ваше сообщение передано партнёру.\n\n"
-            "Ответим в течение 24 часов в рабочее время — здесь, в этом чате."
+            "Чтобы обсудить вашу задачу, выберите время для бесплатной "
+            "стратегической сессии — мы свяжемся точно в это время и "
+            "разберём бизнес."
         ),
     },
     "admin_live_chat_request": {
@@ -315,11 +316,35 @@ TEXTS = {
     },
     "q_complete": {
         "uz": (
-            "Rahmat. Sizning auditingiz tayyorlanadi — partnyor 24 soat ichida bog'lanadi."
+            "Rahmat. Kontekst qabul qilindi.\n\n"
+            "Bepul strategik sessiya uchun qulay vaqtni tanlang — "
+            "uchrashuvda biznesni tahlil qilamiz va auditni siz bilan birga tayyorlaymiz."
         ),
         "ru": (
-            "Спасибо. Мы готовим ваш аудит — партнёр свяжется в течение 24 часов в рабочее время."
+            "Спасибо. Контекст получен.\n\n"
+            "Выберите удобное время для бесплатной стратегической сессии — "
+            "на встрече разберём бизнес и подготовим аудит вместе с вами."
         ),
+    },
+    "q5a_prompt": {
+        "uz": "Biznesingiz nomi qanday? Bitta xabarda yuboring.",
+        "ru": "Как называется ваш бизнес? Введите название одним сообщением.",
+    },
+    "q5_biz_invalid": {
+        "uz": "Juda qisqa. Biznes nomini kiriting (kamida 2 belgi).",
+        "ru": "Слишком коротко. Введите название бизнеса (минимум 2 символа).",
+    },
+    "q5b_prompt": {
+        "uz": "Biznesning sayti bormi? Havolani yuboring yoki «O'tkazib yuborish» tugmasini bosing.",
+        "ru": "Есть ли у бизнеса сайт? Пришлите ссылку, или нажмите «Пропустить».",
+    },
+    "q5c_prompt": {
+        "uz": "Ijtimoiy tarmoqlar — istalgan profil. Havola yoki @username yuboring, yoki «O'tkazib yuborish» tugmasini bosing.",
+        "ru": "Соцсети — любой профиль. Пришлите ссылку или @username, или нажмите «Пропустить».",
+    },
+    "q_skip_btn": {
+        "uz": "O'tkazib yuborish",
+        "ru": "Пропустить",
     },
     "q_skip_later": {
         "uz": "Keyinroq",
