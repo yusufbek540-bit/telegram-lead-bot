@@ -10,7 +10,7 @@ from aiogram.types import Message
 from bot.config import config
 from bot.texts import t
 from bot.services.db_service import db
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard, language_keyboard
 
 router = Router()
@@ -90,14 +90,12 @@ async def cmd_start(message: Message, command: CommandObject):
                 btn_text = "Qisqa so'rovnomani o'tish"
             await message.answer(
                 twa_msg,
-                reply_markup=ReplyKeyboardMarkup(
-                    keyboard=[[KeyboardButton(
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                    InlineKeyboardButton(
                         text=btn_text,
-                        web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}")
-                    )]],
-                    resize_keyboard=True,
-                    one_time_keyboard=False,
-                ),
+                        web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}"),
+                    )
+                ]]),
             )
         else:
             await message.answer(

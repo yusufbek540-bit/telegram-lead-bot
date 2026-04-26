@@ -5,7 +5,7 @@ Services, FAQ, About, Language, Callback Request.
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from bot.config import config
 from bot.texts import t
@@ -162,14 +162,12 @@ async def cb_set_lang(callback: CallbackQuery):
             pass
         await callback.message.answer(
             twa_msg,
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
                     text=btn_text,
-                    web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}")
-                )]],
-                resize_keyboard=True,
-                one_time_keyboard=False,
-            ),
+                    web_app=WebAppInfo(url=f"{config.TWA_URL}?lang={lang}"),
+                )
+            ]]),
         )
     else:
         await safe_edit(
