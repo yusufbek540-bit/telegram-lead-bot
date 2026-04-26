@@ -42,7 +42,7 @@ CHANNELS = [
     ("q_ch_meta", {"uz": "Instagram / Facebook reklama", "ru": "Реклама Instagram / Facebook"}),
     ("q_ch_google", {"uz": "Google Ads", "ru": "Google Ads"}),
     ("q_ch_telegram", {"uz": "Telegram (kanal/reklama)", "ru": "Telegram (канал/реклама)"}),
-    ("q_ch_organic", {"uz": "Organik kontent / SMM", "ru": "Органический контент / SMM"}),
+    ("q_ch_organic", {"uz": "Organik kontent", "ru": "Органический контент"}),
     ("q_ch_offline", {"uz": "Offline (bilbord, agentlar)", "ru": "Офлайн (билборды, агенты)"}),
     ("q_ch_none", {"uz": "Hozircha hech narsa", "ru": "Пока ничего не работает"}),
 ]

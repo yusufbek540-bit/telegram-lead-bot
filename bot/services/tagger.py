@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 TAGGER_PROMPT = """You are an expert CRM analyst.
 Read the following conversation from a potential lead.
 Extract 1 to 3 relevant tags that categorize their business type or service interest. 
-Tags should be concise, e.g., "smm", "web_dev", "b2b_sales", "real_estate", "ai_bot".
-Return ONLY a valid JSON array of strings, nothing else. Example: ["smm", "real_estate"]
+Tags should be concise, e.g., "ads", "content", "web_dev", "b2b_sales", "real_estate", "ai_bot".
+Return ONLY a valid JSON array of strings, nothing else. Example: ["ads", "real_estate"]
 
 Conversation:
 {text}

@@ -165,7 +165,7 @@ async def cmd_portfolio(message: Message):
             "✨ <b>MQSD App</b>",
             (
                 "Внутри — услуги, кейсы, тарифы и прямой чат с менеджером.\n\n"
-                "SMM · AI-контент · автоматизация · продакшн — всё в одном приложении."
+                "Реклама · AI-контент · автоматизация · продакшн — всё в одном приложении."
             ),
             "Открывайте 👇",
         ]
@@ -175,7 +175,7 @@ async def cmd_portfolio(message: Message):
             "✨ <b>MQSD App</b>",
             (
                 "Ichida — xizmatlar, keyslar, tariflar va menejer bilan to'g'ridan-to'g'ri chat.\n\n"
-                "SMM · AI-kontent · avtomatizatsiya · prodakshn — hammasi bir ilovada."
+                "Reklama · AI-kontent · avtomatizatsiya · prodakshn — hammasi bir ilovada."
             ),
             "Oching 👇",
         ]

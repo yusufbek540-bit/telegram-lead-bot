@@ -17,7 +17,7 @@ router = Router()
 # ── Audit-shape value translation ──────────────────────────────
 # The TWA form may post either new audit-shaped keys (q_v_*, q_spend_*,
 # q_ch_*, q_crm_*) OR legacy values from a cached HTML build (health,
-# realestate, smm, has_no_results, 1000_1500, etc.). Normalize either
+# realestate, has_no_results, 1000_1500, etc.). Normalize either
 # shape to the new keys so scoring + admin labels behave correctly.
 
 _VERTICAL_LEGACY = {
@@ -36,7 +36,6 @@ _SPEND_LEGACY = {
 }
 
 _CHANNEL_LEGACY = {
-    "smm": "organic",
     "targeting": "meta",
     "bot": "organic",
     "production": "organic",

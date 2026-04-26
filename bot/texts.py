@@ -32,8 +32,8 @@ TEXTS = {
     "services": {
         "uz": (
             "📋 <b>Bizning xizmatlar:</b>\n\n"
-            "1️⃣ <b>SMM boshqaruvi</b>\n"
-            "Instagram, Telegram, Facebook — kontent, posting, community\n\n"
+            "1️⃣ <b>Reklama uchun kontent</b>\n"
+            "Targetlash uchun video, kreativlar, vizuallar — fotosessiyasiz\n\n"
             "2️⃣ <b>Targetlangan reklama</b>\n"
             "Meta Ads, Telegram Ads, Google Ads\n\n"
             "3️⃣ <b>Veb-sayt yaratish</b>\n"
@@ -102,7 +102,7 @@ TEXTS = {
             "orqali aniq narx aytamiz.\n\n"
             "<b>⏱ Qancha vaqtda natija beradi?</b>\n"
             "Odatda 2-4 hafta ichida birinchi natijalar ko'rinadi. "
-            "SMM va reklama — 1-2 oy ichida barqaror o'sish.\n\n"
+            "Reklama va kontent — 1-2 oy ichida barqaror o'sish.\n\n"
             "<b>📄 Shartnoma tuzasizlarmi?</b>\n"
             "Ha, albatta. Barcha loyihalar rasmiy shartnoma asosida.\n\n"
             "<b>🏢 Qaysi sohalar bilan ishlaysizlar?</b>\n"
