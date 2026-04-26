@@ -128,6 +128,7 @@ async def resume_questionnaire(message: Message, lang: str, step: int, user_id: 
 
 
 async def complete_questionnaire(telegram_id: int, message: Message, lang: str, bot=None):
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
     now = datetime.datetime.now(config.tz).isoformat()
     await db.update_lead(
         telegram_id,
@@ -138,7 +139,22 @@ async def complete_questionnaire(telegram_id: int, message: Message, lang: str, 
     await db.track_event(telegram_id, "questionnaire_completed", {})
     await db.recalculate_score(telegram_id)
 
+    # 1) Completion ack — clears any active ReplyKeyboard
     await message.answer(t("q_complete", lang), reply_markup=remove_keyboard())
+
+    # 2) Schedule CTA — inline button can't co-exist with ReplyKeyboardRemove
+    schedule_label = "Выбрать время" if lang == "ru" else "Vaqtni tanlash"
+    await message.answer(
+        "👇",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text=schedule_label,
+                web_app=WebAppInfo(url=f"{config.TWA_URL}?tab=schedule&lang={lang}"),
+            )
+        ]]),
+    )
+
+    # 3) Main menu (schedule button is also there but other actions matter too)
     await message.answer(
         t("welcome", lang, agency_name=config.AGENCY_NAME),
         reply_markup=main_menu_keyboard(lang),
