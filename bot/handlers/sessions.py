@@ -45,19 +45,18 @@ def _fmt(iso: str | None, lang: str) -> tuple[str, str]:
     return (f"{local.day:02d} {months[local.month - 1]}", f"{local.hour:02d}:{local.minute:02d}")
 
 
-def _row_kb(booking_id: int, reschedule_url: str | None, cancel_url: str | None, lang: str) -> InlineKeyboardMarkup:
+def _row_kb(booking_id: int, lang: str) -> InlineKeyboardMarkup:
     if lang == "ru":
         labels = ("✅ Подтвердить", "🔄 Перенести", "❌ Отменить")
     else:
         labels = ("✅ Tasdiqlash", "🔄 Ko'chirish", "❌ Bekor qilish")
-    rows = [[InlineKeyboardButton(text=labels[0], callback_data=f"bk_confirm:{booking_id}")]]
-    second = []
-    if reschedule_url:
-        second.append(InlineKeyboardButton(text=labels[1], web_app=WebAppInfo(url=reschedule_url)))
-    if cancel_url:
-        second.append(InlineKeyboardButton(text=labels[2], url=cancel_url))
-    if second:
-        rows.append(second)
+    rows = [
+        [InlineKeyboardButton(text=labels[0], callback_data=f"bk_confirm:{booking_id}")],
+        [
+            InlineKeyboardButton(text=labels[1], callback_data=f"bk_resched:{booking_id}"),
+            InlineKeyboardButton(text=labels[2], callback_data=f"bk_cancel:{booking_id}"),
+        ],
+    ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -95,12 +94,14 @@ async def _send_sessions(target, telegram_id: int, lang: str, edit: bool = False
                 "Bepul 30 daqiqalik strategik sessiyani bron qilmoqchimisiz?"
             )
             btn = "📅 Yozilish"
-        kb = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
+        back = "⬅️ Назад" if lang == "ru" else "⬅️ Orqaga"
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
                 text=btn,
                 web_app=WebAppInfo(url=f"{config.TWA_URL}?tab=schedule&lang={lang}"),
-            )
-        ]])
+            )],
+            [InlineKeyboardButton(text=back, callback_data="main_menu")],
+        ])
         if edit:
             await target.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
         else:
@@ -136,7 +137,7 @@ async def _send_sessions(target, telegram_id: int, lang: str, edit: bool = False
                 f"🕐 ~30 daqiqa, bepul\n"
                 f"<i>{badge}</i>"
             )
-        kb = _row_kb(b["id"], b.get("reschedule_url"), b.get("cancel_url"), lang)
+        kb = _row_kb(b["id"], lang)
         await send(body, reply_markup=kb, parse_mode="HTML")
 
 
