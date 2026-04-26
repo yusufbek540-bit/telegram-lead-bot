@@ -27,8 +27,12 @@ from bot.services.db_service import db
 from bot.keyboards.main_menu import main_menu_keyboard, remove_keyboard
 from bot.keyboards.questionnaire import (
     q1_keyboard, q2_keyboard, q3_keyboard, q4_keyboard,
-    q5_skip_keyboard, q6_phone_keyboard,
+    q5b_skip_keyboard, q5c_skip_keyboard, q6_phone_keyboard,
 )
+
+
+# Module-level: track the Q5 sub-step per user. Resets on questionnaire restart.
+_q5_substep: dict[int, str] = {}  # telegram_id -> 'awaiting_biz' | 'awaiting_web' | 'awaiting_social'
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -77,8 +81,8 @@ async def show_q4(callback, lang: str):
 
 
 async def show_q5(callback, lang: str):
-    """Q5 = top problem free text. Edit message + offer skip button."""
-    await safe_edit(callback, t("q5_text", lang), reply_markup=q5_skip_keyboard(lang))
+    """Q5a = business name (required free text). No reply markup — must be answered."""
+    await safe_edit(callback, t("q5a_prompt", lang))
 
 
 async def show_q6(message_or_callback, lang: str):
@@ -111,12 +115,20 @@ async def resume_questionnaire(message: Message, lang: str, step: int, user_id: 
     elif step == 4:
         await message.answer(t("q4_text", lang), reply_markup=q4_keyboard(lang))
     elif step == 5:
-        await message.answer(t("q5_text", lang), reply_markup=q5_skip_keyboard(lang))
+        sub = _q5_substep.get(uid, "awaiting_biz")
+        if sub == "awaiting_web":
+            await message.answer(t("q5b_prompt", lang), reply_markup=q5b_skip_keyboard(lang))
+        elif sub == "awaiting_social":
+            await message.answer(t("q5c_prompt", lang), reply_markup=q5c_skip_keyboard(lang))
+        else:
+            _q5_substep[uid] = "awaiting_biz"
+            await message.answer(t("q5a_prompt", lang))
     elif step == 6:
         await message.answer(t("q6_text", lang), reply_markup=q6_phone_keyboard(lang))
 
 
 async def complete_questionnaire(telegram_id: int, message: Message, lang: str, bot=None):
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
     now = datetime.datetime.now(config.tz).isoformat()
     await db.update_lead(
         telegram_id,
@@ -127,7 +139,22 @@ async def complete_questionnaire(telegram_id: int, message: Message, lang: str, 
     await db.track_event(telegram_id, "questionnaire_completed", {})
     await db.recalculate_score(telegram_id)
 
+    # 1) Completion ack — clears any active ReplyKeyboard
     await message.answer(t("q_complete", lang), reply_markup=remove_keyboard())
+
+    # 2) Schedule CTA — inline button can't co-exist with ReplyKeyboardRemove
+    schedule_label = "Выбрать время" if lang == "ru" else "Vaqtni tanlash"
+    await message.answer(
+        "👇",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text=schedule_label,
+                web_app=WebAppInfo(url=f"{config.TWA_URL}?tab=schedule&lang={lang}"),
+            )
+        ]]),
+    )
+
+    # 3) Main menu (schedule button is also there but other actions matter too)
     await message.answer(
         t("welcome", lang, agency_name=config.AGENCY_NAME),
         reply_markup=main_menu_keyboard(lang),
@@ -179,19 +206,23 @@ async def _notify_admins_qualified(bot, lead):
     channels_raw = lead.get("service_interest") or []
     channels = ", ".join(CHANNEL_LABELS.get(c, c) for c in channels_raw) or "—"
     crm = CRM_LABELS.get(lead.get("current_marketing"), "—")
-    problem = escape(lead.get("business_name") or "—")
+    biz = escape(lead.get("business_name") or "—")
+    web = escape(lead.get("website") or "—")
+    social = escape(lead.get("social_handle") or "—")
     phone = lead.get("phone") or "—"
     source = escape(lead.get("source") or "organic")
     score = lead.get("lead_score") or 0
 
     text = (
-        "<b>Заявка на бесплатный аудит</b>\n\n"
+        "<b>Новая заявка — анкета пройдена</b>\n\n"
         f"Имя: <b>{name}</b> (@{username})\n"
         f"Направление: {escape(vertical)}\n"
         f"Бюджет на рекламу: {escape(spend)}\n"
         f"Каналы: {escape(channels)}\n"
         f"CRM: {escape(crm)}\n"
-        f"Главная задача: {problem}\n"
+        f"<b>Бизнес:</b> {biz}\n"
+        f"<b>Сайт:</b> {web}\n"
+        f"<b>Соцсети:</b> {social}\n"
         f"Телефон: {phone}\n"
         f"Источник: {source}\n"
         f"Баллы: {score}"
@@ -275,32 +306,67 @@ async def handle_crm(callback: CallbackQuery):
 
     await db.update_lead(user_id, current_marketing=callback.data, questionnaire_step=5)
     await db.track_event(user_id, "questionnaire_q4_answered", {"crm": callback.data})
+    _q5_substep[user_id] = "awaiting_biz"
     await show_q5(callback, lang)
     await callback.answer()
 
 
-# ── Q5: Top problem (free text) ────────────────────────────────
+# ── Q5: Intake (5a biz name → 5b website → 5c social) ──────────
 
 @router.message(F.text, QStepFilter(step=5))
-async def handle_top_problem(message: Message):
+async def handle_q5_text(message: Message):
     user_id = message.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
+    sub = _q5_substep.get(user_id, "awaiting_biz")
+    text = (message.text or "").strip()
 
-    problem = (message.text or "").strip()[:500]
-    await db.update_lead(user_id, business_name=problem, questionnaire_step=6)
-    await db.track_event(user_id, "questionnaire_q5_answered", {"has_text": bool(problem)})
-    await show_q6(message, lang)
+    if sub == "awaiting_biz":
+        if len(text) < 2:
+            await message.answer(t("q5_biz_invalid", lang))
+            return
+        await db.update_lead(user_id, business_name=text[:100])
+        _q5_substep[user_id] = "awaiting_web"
+        await db.track_event(user_id, "questionnaire_q5a_answered", {})
+        await message.answer(t("q5b_prompt", lang), reply_markup=q5b_skip_keyboard(lang))
+        return
+
+    if sub == "awaiting_web":
+        await db.update_lead(user_id, website=text[:200])
+        _q5_substep[user_id] = "awaiting_social"
+        await db.track_event(user_id, "questionnaire_q5b_answered", {"has_text": True})
+        await message.answer(t("q5c_prompt", lang), reply_markup=q5c_skip_keyboard(lang))
+        return
+
+    if sub == "awaiting_social":
+        await db.update_lead(user_id, social_handle=text[:200], questionnaire_step=6)
+        _q5_substep.pop(user_id, None)
+        await db.track_event(user_id, "questionnaire_q5c_answered", {"has_text": True})
+        await show_q6(message, lang)
+        return
 
 
-@router.callback_query(F.data == "q_problem_skip")
-async def handle_problem_skip(callback: CallbackQuery):
+@router.callback_query(F.data == "q5b_skip")
+async def handle_q5b_skip(callback: CallbackQuery):
     user_id = callback.from_user.id
     lead = await db.get_lead(user_id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
 
+    _q5_substep[user_id] = "awaiting_social"
+    await db.track_event(user_id, "questionnaire_q5b_answered", {"skipped": True})
+    await safe_edit(callback, t("q5c_prompt", lang), reply_markup=q5c_skip_keyboard(lang))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "q5c_skip")
+async def handle_q5c_skip(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    lead = await db.get_lead(user_id)
+    lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else config.DEFAULT_LANG
+
+    _q5_substep.pop(user_id, None)
     await db.update_lead(user_id, questionnaire_step=6)
-    await db.track_event(user_id, "questionnaire_q5_answered", {"skipped": True})
+    await db.track_event(user_id, "questionnaire_q5c_answered", {"skipped": True})
     await safe_edit(callback, t("q_problem_skipped", lang))
     await callback.answer()
     await show_q6(callback, lang)

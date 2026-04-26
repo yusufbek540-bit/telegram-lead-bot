@@ -16,8 +16,13 @@ from bot.texts import t
 
 def main_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
     """Main menu with all primary actions."""
+    schedule_label = "📅 Записаться на сессию" if lang == "ru" else "📅 Sessiyaga yozilish"
+    schedule_url = f"{config.TWA_URL}?tab=schedule&lang={lang}"
     return InlineKeyboardMarkup(
         inline_keyboard=[
+            [
+                InlineKeyboardButton(text=schedule_label, web_app=WebAppInfo(url=schedule_url)),
+            ],
             [
                 InlineKeyboardButton(
                     text=t("btn_services", lang), callback_data="services"
@@ -35,11 +40,6 @@ def main_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
                     text=t("btn_live_chat", lang), callback_data="live_chat_request"
                 ),
             ],
-            [
-                InlineKeyboardButton(
-                    text=t("btn_callback", lang), callback_data="callback_request"
-                ),
-            ],
         ]
     )
 
@@ -47,13 +47,16 @@ def main_menu_keyboard(lang: str = "uz") -> InlineKeyboardMarkup:
 def back_to_menu_keyboard(lang: str = "uz", show_callback: bool = True) -> InlineKeyboardMarkup:
     """Simple "back to menu" button shown after content.
 
-    show_callback: include the "Order a callback" CTA. Pass False when the user
-    has already shared their phone number — repeating the CTA is noise.
+    The `show_callback` flag is retained for back-compat; the callback CTA was
+    replaced by the schedule CTA on the main menu, so it now only adds a
+    schedule shortcut when requested.
     """
     rows = [[InlineKeyboardButton(text=t("btn_back", lang), callback_data="main_menu")]]
     if show_callback:
+        schedule_label = "📅 Выбрать время" if lang == "ru" else "📅 Vaqtni tanlash"
+        schedule_url = f"{config.TWA_URL}?tab=schedule&lang={lang}"
         rows.append([
-            InlineKeyboardButton(text=t("btn_callback", lang), callback_data="callback_request")
+            InlineKeyboardButton(text=schedule_label, web_app=WebAppInfo(url=schedule_url))
         ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 

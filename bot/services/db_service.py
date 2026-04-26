@@ -297,85 +297,82 @@ class DatabaseService:
         if not lead:
             return 0
 
-        score = 0
-
-        # Phone shared = high intent
-        if lead.get("phone"):
-            score += 30
-
-        # Email shared
-        if lead.get("email"):
-            score += 20
-
-        # Count messages
         convos = await self.get_conversation(telegram_id, limit=100)
         user_msgs = [c for c in convos if c["role"] == "user"]
-        if len(user_msgs) >= 10:
-            score += 20
-        elif len(user_msgs) >= 5:
-            score += 15
-        elif len(user_msgs) >= 2:
-            score += 5
 
-        # Count events
         events_result = (
             self.client.table("events")
             .select("event_type")
             .eq("telegram_id", telegram_id)
             .execute()
         )
-        events = events_result.data
-        event_types = {e["event_type"] for e in events}
+        event_types = {e["event_type"] for e in events_result.data}
 
-        if "twa_open" in event_types:
-            score += 10
-        if "callback_request" in event_types:
-            score += 25
-        if "projects" in event_types:
-            score += 10
-        if "services" in event_types:
-            score += 5
-
-        # Questionnaire completion
-        if lead.get("questionnaire_completed"):
-            score += 15
-
-        # Audit signal: monthly ad spend (budget_range column)
-        spend = lead.get("budget_range", "")
-        if spend == "q_spend_10k_plus":
-            score += 25
-        elif spend == "q_spend_3k_10k":
-            score += 20
-        elif spend == "q_spend_1k_3k":
-            score += 10
-        elif spend == "q_spend_lt1k":
-            score += 5
-
-        # Audit signal: vertical match (active outbound = higher fit)
-        vertical = lead.get("business_type", "")
-        if vertical in ("q_v_realestate", "q_v_clinic", "q_v_education"):
-            score += 10
-
-        # Audit signal: number of active channels (service_interest column)
-        channels = lead.get("service_interest") or []
-        if len(channels) >= 3:
-            score += 10
-        elif len(channels) >= 2:
-            score += 5
-
-        # Audit signal: CRM maturity (current_marketing column)
-        crm = lead.get("current_marketing", "")
-        if crm == "q_crm_yes":
-            score += 10
-        elif crm == "q_crm_sheet":
-            score += 5
-
-        # Audit signal: provided a top problem text
-        if (lead.get("business_name") or "").strip():
-            score += 10
-
+        score = compute_score(lead, len(user_msgs), event_types)
         await self.update_lead(telegram_id, lead_score=score)
         return score
+
+
+def compute_score(lead: dict, user_msg_count: int, event_types: set) -> int:
+    """Pure scoring function — no DB access, fully testable."""
+    score = 0
+
+    if lead.get("phone"):
+        score += 30
+    if lead.get("email"):
+        score += 20
+
+    if user_msg_count >= 10:
+        score += 20
+    elif user_msg_count >= 5:
+        score += 15
+    elif user_msg_count >= 2:
+        score += 5
+
+    if "twa_open" in event_types:
+        score += 10
+    if "callback_request" in event_types:
+        score += 25
+    if "projects" in event_types:
+        score += 10
+    if "services" in event_types:
+        score += 5
+
+    if lead.get("questionnaire_completed"):
+        score += 15
+
+    spend = lead.get("budget_range") or ""
+    if spend == "q_spend_10k_plus":
+        score += 25
+    elif spend == "q_spend_3k_10k":
+        score += 20
+    elif spend == "q_spend_1k_3k":
+        score += 10
+    elif spend == "q_spend_lt1k":
+        score += 5
+
+    vertical = lead.get("business_type") or ""
+    if vertical in ("q_v_realestate", "q_v_clinic", "q_v_education"):
+        score += 10
+
+    channels = lead.get("service_interest") or []
+    if len(channels) >= 3:
+        score += 10
+    elif len(channels) >= 2:
+        score += 5
+
+    crm = lead.get("current_marketing") or ""
+    if crm == "q_crm_yes":
+        score += 10
+    elif crm == "q_crm_sheet":
+        score += 5
+
+    if (lead.get("business_name") or "").strip():
+        score += 5
+    if (lead.get("website") or "").strip():
+        score += 5
+
+    return score
 
 
 # Singleton instance

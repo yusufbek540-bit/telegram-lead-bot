@@ -1370,7 +1370,7 @@
       const load = useCallback(async () => {
         setLoading(true);
         try {
-          const { data: leads, error: le } = await supabase.from('leads').select('id, status, phone, created_at, lead_score, first_name, last_name, telegram_id, source, first_contact_at, last_activity_at, rejection_reason, duplicate_of, business_type, service_interest, current_marketing, budget_range, questionnaire_completed, questionnaire_step');
+          const { data: leads, error: le } = await supabase.from('leads').select('id, status, phone, created_at, lead_score, first_name, last_name, telegram_id, source, first_contact_at, last_activity_at, rejection_reason, duplicate_of, business_type, service_interest, current_marketing, budget_range, questionnaire_completed, questionnaire_step, business_name, website, social_handle, booking_status, next_session_at');
           if (le) throw le;
           const total = leads.length;
           const weekAgo = Date.now() - 7 * 86400000;
@@ -1903,6 +1903,15 @@
                           {isUnread && <span className="unread-indicator" title="New message"></span>}
                           <span>{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.username || '—'}</span>
                           {(() => { const b = responseTimeBadge(l); return b ? <span style={{ marginLeft: 6, fontSize: 11, color: b.color }} title={b.title}>{b.text}</span> : null; })()}
+                          {l.booking_status === 'scheduled' && l.next_session_at && (
+                            <span
+                              style={{ marginLeft: 6, fontSize: 11, color: '#0369a1', fontWeight: 600 }}
+                              title={new Date(l.next_session_at).toLocaleString('ru-RU')}
+                            >📅 {new Date(l.next_session_at).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}</span>
+                          )}
+                          {l.booking_status === 'cancelled' && (
+                            <span style={{ marginLeft: 6, fontSize: 11, color: '#dc2626' }}>отменена</span>
+                          )}
                         </div>
                       </td>
                       <td>{l.phone || '—'}</td>
@@ -2523,6 +2532,30 @@
               <div className="field-row">
                 <span className="label">Q. Progress</span>
                 <span>{lead.questionnaire_completed ? '✅ Completed' : `⏳ Step ${lead.questionnaire_step || 0}/5`}</span>
+              </div>
+              <div className="field-row">
+                <span className="label">Бизнес</span>
+                <span style={{ textAlign: 'right' }}>{lead.business_name || '—'}</span>
+              </div>
+              <div className="field-row">
+                <span className="label">Сайт</span>
+                <span style={{ textAlign: 'right' }}>
+                  {lead.website ? <a href={lead.website} target="_blank" rel="noreferrer">{lead.website}</a> : '—'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="label">Соцсети</span>
+                <span style={{ textAlign: 'right' }}>{lead.social_handle || '—'}</span>
+              </div>
+              <div className="field-row">
+                <span className="label">Сессия</span>
+                <span style={{ textAlign: 'right', fontWeight: 600 }}>
+                  {lead.booking_status === 'scheduled' && lead.next_session_at
+                    ? `📅 ${new Date(lead.next_session_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}`
+                    : lead.booking_status === 'cancelled'
+                      ? <span style={{ color: '#dc2626' }}>отменена</span>
+                      : '—'}
+                </span>
               </div>
             </div>
 

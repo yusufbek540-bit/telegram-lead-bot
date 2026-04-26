@@ -88,10 +88,17 @@ def q4_keyboard(lang: str) -> InlineKeyboardMarkup:
     return _grid(CRM_STATUS, lang, cols=1)
 
 
-def q5_skip_keyboard(lang: str) -> InlineKeyboardMarkup:
-    """Q5 is free text; offer a single 'skip' inline button."""
+def q5b_skip_keyboard(lang: str) -> InlineKeyboardMarkup:
+    """Inline 'skip' for the optional website prompt (Q5b)."""
     return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=t("q_skip_later", lang), callback_data="q_problem_skip"),
+        InlineKeyboardButton(text=t("q_skip_btn", lang), callback_data="q5b_skip"),
+    ]])
+
+
+def q5c_skip_keyboard(lang: str) -> InlineKeyboardMarkup:
+    """Inline 'skip' for the optional social handle prompt (Q5c)."""
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text=t("q_skip_btn", lang), callback_data="q5c_skip"),
     ]])
 
 
