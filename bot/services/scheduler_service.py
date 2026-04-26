@@ -33,6 +33,7 @@ from bot.services.tagger import run_auto_tagger
 from bot.services.sentiment import run_sentiment_analysis
 from bot.services.broadcaster import check_scheduled_campaigns
 from bot.services.chat_relay_service import run_chat_relay
+from bot.services.booking_reminders import send_upcoming_reminders
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ async def heartbeat():
     known_jobs = [
         "run_followups", "check_followup_reminders", "detect_stale_leads",
         "check_proposal_expiry", "run_auto_tagger", "run_sentiment_analysis",
-        "check_scheduled_campaigns", "run_chat_relay",
+        "check_scheduled_campaigns", "run_chat_relay", "send_upcoming_reminders",
     ]
     for jid in known_jobs:
         try:
@@ -228,6 +229,15 @@ async def _wrap_run_chat_relay(bot: Bot):
     except Exception as e:
         logger.error(f"run_chat_relay: {e}", exc_info=True)
         _record_job("run_chat_relay", status="error", error=str(e)[:200])
+
+
+async def _wrap_send_upcoming_reminders(bot: Bot):
+    try:
+        await send_upcoming_reminders(bot)
+        _record_job("send_upcoming_reminders")
+    except Exception as e:
+        logger.error(f"send_upcoming_reminders: {e}", exc_info=True)
+        _record_job("send_upcoming_reminders", status="error", error=str(e)[:200])
 
 
 # ── SCHEDULER SETUP ────────────────────────────────────────
@@ -314,6 +324,15 @@ def create_scheduler(bot: Bot) -> AsyncIOScheduler:
         seconds=30,
         args=[bot],
         id="run_chat_relay",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        _wrap_send_upcoming_reminders,
+        trigger="interval",
+        minutes=config.JOB_INTERVALS["booking_reminder_minutes"],
+        args=[bot],
+        id="send_upcoming_reminders",
         replace_existing=True,
     )
 

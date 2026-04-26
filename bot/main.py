@@ -14,7 +14,7 @@ from aiogram.client.default import DefaultBotProperties
 from bot.config import config
 
 # Import all routers
-from bot.handlers import start, questionnaire, menu, contact, ai_chat, admin, twa, live_chat
+from bot.handlers import start, questionnaire, menu, contact, ai_chat, admin, twa, live_chat, booking_reminder
 from bot.services.scheduler_service import create_scheduler
 
 
@@ -50,6 +50,8 @@ async def main():
     dp.include_router(menu.router)
     # 7. Live chat — must be before partner-handoff to intercept active sessions
     dp.include_router(live_chat.router)
+    # 7.5 Booking reminder callbacks (bk_confirm/bk_cancel/bk_resched)
+    dp.include_router(booking_reminder.router)
     # 8. Partner-handoff catch-all (LAST — any unmatched text goes to a manager)
     dp.include_router(ai_chat.router)
 

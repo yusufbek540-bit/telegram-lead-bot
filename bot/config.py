@@ -53,6 +53,7 @@ class Config:
         "proposal_expiry_hours": 6,
         "campaign_dispatch_minutes": 5,
         "heartbeat_minutes": 30,
+        "booking_reminder_minutes": 15,   # 2h pre-session reminder check
     }
     STALE_THRESHOLDS: dict = {
         "new": 1,
