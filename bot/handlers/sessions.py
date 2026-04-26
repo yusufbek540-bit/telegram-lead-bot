@@ -48,14 +48,17 @@ def _fmt(iso: str | None, lang: str) -> tuple[str, str]:
 def _row_kb(booking_id: int, lang: str) -> InlineKeyboardMarkup:
     if lang == "ru":
         labels = ("✅ Подтвердить", "🔄 Перенести", "❌ Отменить")
+        back = "⬅️ Назад в меню"
     else:
         labels = ("✅ Tasdiqlash", "🔄 Ko'chirish", "❌ Bekor qilish")
+        back = "⬅️ Menyuga qaytish"
     rows = [
         [InlineKeyboardButton(text=labels[0], callback_data=f"bk_confirm:{booking_id}")],
         [
             InlineKeyboardButton(text=labels[1], callback_data=f"bk_resched:{booking_id}"),
             InlineKeyboardButton(text=labels[2], callback_data=f"bk_cancel:{booking_id}"),
         ],
+        [InlineKeyboardButton(text=back, callback_data="main_menu")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 

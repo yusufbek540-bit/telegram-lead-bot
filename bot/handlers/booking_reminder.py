@@ -77,13 +77,18 @@ async def cb_confirm(callback: CallbackQuery):
     date, time = _fmt_dt(booking.get("scheduled_at"), lang)
     if lang == "ru":
         text = f"✓ Подтверждено. Ждём вас <b>{date}</b> в <b>{time}</b>."
+        back = "⬅️ Назад в меню"
     else:
         text = f"✓ Tasdiqlandi. Sizni <b>{date}</b> soat <b>{time}</b> da kutamiz."
+        back = "⬅️ Menyuga qaytish"
 
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text=back, callback_data="main_menu")
+    ]])
     try:
-        await callback.message.edit_text(text, parse_mode="HTML")
+        await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
     except Exception:
-        await callback.message.answer(text, parse_mode="HTML")
+        await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
 
@@ -111,13 +116,16 @@ async def cb_cancel(callback: CallbackQuery):
     if lang == "ru":
         prompt = "Отмена обрабатывается на странице Cal.com — нажмите кнопку ниже."
         btn = "Открыть отмену"
+        back = "⬅️ Назад в меню"
     else:
         prompt = "Bekor qilish Cal.com sahifasida amalga oshiriladi — quyidagi tugmani bosing."
         btn = "Bekor qilishni ochish"
+        back = "⬅️ Menyuga qaytish"
 
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=btn, url=cancel_url)
-    ]])
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=btn, url=cancel_url)],
+        [InlineKeyboardButton(text=back, callback_data="main_menu")],
+    ])
     try:
         await callback.message.edit_text(prompt, reply_markup=kb)
     except Exception:
@@ -149,13 +157,16 @@ async def cb_reschedule(callback: CallbackQuery):
     if lang == "ru":
         prompt = "Откройте страницу переноса и выберите новое время."
         btn = "Перенести встречу"
+        back = "⬅️ Назад в меню"
     else:
         prompt = "Ko‘chirish sahifasini oching va yangi vaqt tanlang."
         btn = "Uchrashuvni ko‘chirish"
+        back = "⬅️ Menyuga qaytish"
 
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=btn, web_app=WebAppInfo(url=reschedule_url))
-    ]])
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=btn, web_app=WebAppInfo(url=reschedule_url))],
+        [InlineKeyboardButton(text=back, callback_data="main_menu")],
+    ])
     try:
         await callback.message.edit_text(prompt, reply_markup=kb)
     except Exception:
