@@ -5,7 +5,7 @@ Services, FAQ, About, Language, Callback Request.
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, WebAppInfo
 
 from bot.config import config
 from bot.texts import t
@@ -160,6 +160,8 @@ async def cb_set_lang(callback: CallbackQuery):
             )
         except Exception:
             pass
+        # Dismiss any lingering ReplyKeyboard from previous flows.
+        await callback.message.answer("⌨️", reply_markup=ReplyKeyboardRemove())
         await callback.message.answer(
             twa_msg,
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[

@@ -10,7 +10,7 @@ from aiogram.types import Message
 from bot.config import config
 from bot.texts import t
 from bot.services.db_service import db
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from bot.keyboards.main_menu import main_menu_keyboard, back_to_menu_keyboard, language_keyboard
 
 router = Router()
@@ -88,6 +88,8 @@ async def cmd_start(message: Message, command: CommandObject):
                     "javob bering — taxminan 1 daqiqa."
                 )
                 btn_text = "Qisqa so'rovnomani o'tish"
+            # Dismiss any lingering ReplyKeyboard from previous flows.
+            await message.answer("⌨️", reply_markup=ReplyKeyboardRemove())
             await message.answer(
                 twa_msg,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
