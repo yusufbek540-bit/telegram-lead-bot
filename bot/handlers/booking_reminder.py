@@ -98,6 +98,8 @@ async def cb_cancel(callback: CallbackQuery):
     lead = await db.get_lead(callback.from_user.id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else "ru"
     cancel_url = booking.get("cancel_url")
+    if not cancel_url and booking.get("cal_booking_uid"):
+        cancel_url = f"https://app.cal.com/booking/{booking['cal_booking_uid']}?cancel=true"
 
     await db.track_event(callback.from_user.id, "booking_cancel_clicked", {"booking_id": booking_id})
 
@@ -134,6 +136,8 @@ async def cb_reschedule(callback: CallbackQuery):
     lead = await db.get_lead(callback.from_user.id)
     lang = lead.get("preferred_lang", config.DEFAULT_LANG) if lead else "ru"
     reschedule_url = booking.get("reschedule_url")
+    if not reschedule_url and booking.get("cal_booking_uid"):
+        reschedule_url = f"https://app.cal.com/reschedule/{booking['cal_booking_uid']}"
 
     await db.track_event(callback.from_user.id, "booking_reschedule_clicked", {"booking_id": booking_id})
 
